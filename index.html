@@ -3,12 +3,20 @@
 	<script type="application/x-javascript" src="flyrock.js"></script>
 	<style>
 		.speedDiv {
-			width:190px;
+			width:195px;
 			height:50px;
 			font-family:Helvetica, sans;
 			font-size:32px;
 			text-align:right;
 			display:inline-block;
+			margin:0px;
+			padding:0px;
+		}
+		.button {
+			background-color:black;
+			color:white;
+			cursor:pointer;
+			text-align:center;
 		}
 	</style>
 </head>
@@ -24,5 +32,9 @@
 		<div id="player2score" class="speedDiv">0.00 mp/h</div>
 		<div id="player3score" class="speedDiv">0.00 mp/h</div>
 		<div id="player4score" class="speedDiv">0.00 mp/h</div>
+		<div id="player1Action" class="speedDiv button" onmousedown="pressMe(0);" onmouseup="unPressMe(0);">XXXXXXX</div>
+		<div id="player2Action" class="speedDiv button" onmousedown="pressMe(1);" onmouseup="unPressMe(1);">XXXXXXX</div>
+		<div id="player3Action" class="speedDiv button" onmousedown="pressMe(2);" onmouseup="unPressMe(2);">XXXXXXX</div>
+		<div id="player4Action" class="speedDiv button" onmousedown="pressMe(3);" onmouseup="unPressMe(3);">XXXXXXX</div>
 	</div>
 </body>

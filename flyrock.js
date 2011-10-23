@@ -307,4 +307,11 @@ function isBelowGround(position) {
 	else return false;
 }
 
+function pressMe(i) {
+	keys[rocks[i].onKey] = true;
+}
+function unPressMe(i) {
+	keys[rocks[i].onKey] = false;
+}
+
 window.onload = init;
