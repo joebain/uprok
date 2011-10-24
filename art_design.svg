@@ -91,7 +91,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.979899"
-     inkscape:cx="373.40564"
+     inkscape:cx="295.11882"
      inkscape:cy="541.19925"
      inkscape:document-units="px"
      inkscape:current-layer="layer2"
@@ -109,7 +109,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -118,15 +118,15 @@
      id="layer2"
      inkscape:label="scenery">
     <rect
-       style="fill:#ffffff;stroke:#000000;stroke-width:3;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;fill-opacity:1"
+       style="fill:#ffffff;stroke:none;stroke-width:3;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;fill-opacity:1"
        id="rect4734"
        width="362.64478"
        height="80.812202"
        x="127.78429"
        y="456.37219"
        inkscape:export-filename="/home/joe/Code/flyrock/logo.png"
-       inkscape:export-xdpi="196.51007"
-       inkscape:export-ydpi="196.51007" />
+       inkscape:export-xdpi="198.54138"
+       inkscape:export-ydpi="198.54138" />
     <path
        style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="m 88.571429,333.79075 -1.428572,212.85715 583.664243,0.31689 0.69326,-231.91878 -12.92893,24.45903 -62.85714,50 -41.42858,14.28571 -57.14285,-21.42857 -48.57143,-51.42857 -74.28572,40 -30,8.57143 L 300,372.36218 287.14286,410.93361 225.71429,458.07647 182.85714,455.21933 144.28571,418.07647 130,380.93361 z"
