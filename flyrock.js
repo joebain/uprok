@@ -57,7 +57,7 @@ function init() {
 	var maxYVel = 1;
 	var borderY = 300;
 	for (var i = 0 ; i <= groundPoints ; i++) {
-		maxYVel = i /500 + 5;
+		maxYVel = i /500 + 1;
 		if (maxYVel > 30) maxYVel = 30;
 		var newy;
 		do {
@@ -227,7 +227,7 @@ function update(delta)
 		if (tooFar && slowest) {
 			//someone is out
       console.log("booting out " + slowest);
-			rocks[slowest].elementSpeed.innerHTML = "Lose!";
+			rocks[slowest].elementSpeed.innerHTML = "Out";
 			rocks.splice(slowest,1);
 		}
 	}
@@ -253,11 +253,11 @@ function draw() {
 	context.fillStyle = "#000000";
 	context.strokeWidth = 5;
 	context.beginPath();
-	context.lineTo(0,levelSize.y*worldScale);
+	context.lineTo(-1000,levelSize.y*worldScale+1000);
 	for (; i <= lim; i++) {
 		context.lineTo((ground[i].x - camera.x)*worldScale, ((levelSize.y - ground[i].y) - camera.y)*worldScale);
 	}
-	context.lineTo(levelSize.x*worldScale, levelSize.y*worldScale);
+	context.lineTo(levelSize.x*worldScale+1000, levelSize.y*worldScale+1000);
 	context.closePath();
 	context.fill();
 

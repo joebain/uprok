@@ -10,19 +10,20 @@
 			text-align:right;
 			display:inline-block;
 			margin:0px;
-			padding:0px;
+      padding:0px;
+      color:#ffffff;
 		}
 		.button {
 			background-color:black;
 			color:white;
 			cursor:pointer;
-			text-align:center;
 		}
 	</style>
 </head>
 
-<body style="background-color:#aaaaaa;">
+<body style="background-color:#000000;">
 	<div id="container" style="width:800; height:500; position:relative; margin:auto; ">
+    <img src="logo.png" style="padding-bottom:5px"/>
 		<canvas id="canvas" width="800" height="400" style="position:relative;"></canvas>
 		<div id="player1speed" class="speedDiv">0.00 mp/h</div>
 		<div id="player2speed" class="speedDiv">0.00 mp/h</div>
@@ -32,9 +33,9 @@
 		<div id="player2score" class="speedDiv">0.00 mp/h</div>
 		<div id="player3score" class="speedDiv">0.00 mp/h</div>
 		<div id="player4score" class="speedDiv">0.00 mp/h</div>
-		<div id="player1Action" class="speedDiv button" onmousedown="pressMe(0);" onmouseup="unPressMe(0);">XXXXXXX</div>
-		<div id="player2Action" class="speedDiv button" onmousedown="pressMe(1);" onmouseup="unPressMe(1);">XXXXXXX</div>
-		<div id="player3Action" class="speedDiv button" onmousedown="pressMe(2);" onmouseup="unPressMe(2);">XXXXXXX</div>
-		<div id="player4Action" class="speedDiv button" onmousedown="pressMe(3);" onmouseup="unPressMe(3);">XXXXXXX</div>
+		<div id="player1Action" class="speedDiv button" onmousedown="pressMe(0);" onmouseup="unPressMe(0);">XXXXXXXX</div>
+		<div id="player2Action" class="speedDiv button" onmousedown="pressMe(1);" onmouseup="unPressMe(1);">XXXXXXXX</div>
+		<div id="player3Action" class="speedDiv button" onmousedown="pressMe(2);" onmouseup="unPressMe(2);">XXXXXXXX</div>
+    <div id="player4Action" class="speedDiv button" onmousedown="pressMe(3);" onmouseup="unPressMe(3);">XXXXXXXX</div>
 	</div>
 </body>
