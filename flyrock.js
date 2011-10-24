@@ -15,12 +15,15 @@ var rockJumpGroundAcceleration = {x:0.003, y:0.001};
 var minRockYVelocity = 1;
 
 var camera = {x:0, y:0};
+var desiredCamera = {x:0, y:0};
 var pointSpacing = 10;
 var pointHeight = 30;
 var screenSize = {x:1600, y:800};
 var canvasSize = {x:800, y:400};
 var groundPoints = 10000;
 var levelSize = {x:groundPoints*pointSpacing, y:screenSize.y * 3};
+var cameraTracking = 0.1;
+var cameraZooming = 0.05;
 
 var worldScale = 0.5;
 var desiredWorldScale = 0.5;
@@ -30,6 +33,12 @@ var rocks = [];
 
 var keys = {};
 
+var lastTime = new Date().getTime();
+var thisTime = 0;
+var delta = 0;
+var interval = 0;
+var targetInterval = 17;
+
 function init() {
 	var canvas = document.getElementById("canvas");
 //    canvas.style.height = screenSize.y*worldScale;
@@ -38,7 +47,6 @@ function init() {
 //    canvas.style.left = (window.innerWidth-screenSize.x*worldScale)/2;
 
     context = canvas.getContext("2d");
-	setInterval(loop, 1000/60);
 
 	window.onkeydown = keysdown;
 	window.onkeyup = keysup;
@@ -102,6 +110,8 @@ function init() {
 		rocks[i].elementSpeed.style.color = rocks[i].colour;
 		rocks[i].elementScore = document.getElementById(rocks[i].scoreDivId);
 	}
+
+  loop();
 }
 
 function keysup(e) {
@@ -113,9 +123,15 @@ function keysdown(e) {
 }
 
 function loop() {
-	var delta = 1000/60;
-	update(delta);
-	draw();
+  thisTime = new Date().getTime();
+  delta = thisTime-lastTime;
+  lastTime = thisTime;
+  update(delta);
+  draw();
+
+  interval = targetInterval - (new Date().getTime() - thisTime);
+  interval = interval < 1 ? 1 : interval;
+  setTimeout(loop, interval);
 }
 
 function scaleWorld(scale)
@@ -131,6 +147,15 @@ function scaleWorld(scale)
 	desiredWorldScale = scale * 0.8;
 
 	return tooFar;
+}
+
+function panCamera(x,y) {
+	if (x < 0) x = 0;
+	if (x > levelSize.x - screenSize.x) x = levelSize.x - screenSize.x;
+	if (y < 0) y = 0;
+	if (y > levelSize.y - screenSize.y) y = levelSize.y - screenSize.y;
+  desiredCamera.x = x;
+  desiredCamera.y = y;
 }
 
 function update(delta)
@@ -191,18 +216,17 @@ function update(delta)
 	}
 
 	if (rocks.length == 1) {
-		camera.x = rocks[0].x - screenSize.x/4;
-		camera.y = rocks[0].y - screenSize.y/2;
+    panCamera(rocks[0].x - screenSize.x/4, rocks[0].y - screenSize.y/2);
 		
 		scaleWorld(0.5/rocks[0].velocity.x);
 	} else {
-		camera.x = (viewRect.left + viewRect.right) /2 - screenSize.x/2;
-		camera.y = (viewRect.top + viewRect.bottom) /2 - screenSize.y/2;
+    panCamera((viewRect.left + viewRect.right) /2 - screenSize.x/2, (viewRect.top + viewRect.bottom) /2 - screenSize.y/2);
 
 		var tooFar = scaleWorld(canvasSize.x / (viewRect.right-viewRect.left));
 
-		if (tooFar) {
+		if (tooFar && slowest) {
 			//someone is out
+      console.log("booting out " + slowest);
 			rocks[slowest].elementSpeed.innerHTML = "Lose!";
 			rocks.splice(slowest,1);
 		}
@@ -211,20 +235,20 @@ function update(delta)
 }
 
 function draw() {
-	worldScale = worldScale*0.95 + desiredWorldScale*0.05;
+	worldScale = worldScale*(1-cameraZooming) + desiredWorldScale*cameraZooming;
 	screenSize.x = canvasSize.x / worldScale;
 	screenSize.y = canvasSize.y / worldScale;
 
 	context.fillStyle="#ffffff";
 	context.fillRect(0,0,screenSize.x*worldScale, screenSize.y*worldScale);
 
-	if (camera.x < 0) camera.x = 0;
-	if (camera.x > levelSize.x - screenSize.x) camera.x = levelSize.x - screenSize.x;
-	if (camera.y < 0) camera.y = 0;
-	if (camera.y > levelSize.y - screenSize.y) camera.y = levelSize.y - screenSize.y;
+  camera.x = camera.x*(1-cameraTracking) + desiredCamera.x*cameraTracking;
+  camera.y = camera.y*(1-cameraTracking) + desiredCamera.y*cameraTracking;
+
 
 	var i = Math.floor(camera.x/pointSpacing);
 	var lim = Math.ceil((screenSize.x + camera.x)/pointSpacing);
+  if (lim >= groundPoints) lim = groundPoints-1;
 	context.strokeStyle = "#000000";
 	context.fillStyle = "#000000";
 	context.strokeWidth = 5;
