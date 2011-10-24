@@ -8,14 +8,11 @@ var Vector2f = function(x, y) {
 	return this;
 }
 var gravity = 0.004;
-var groundForce = 0.006;
-var groundFriction = 0.95;
-var airFriction = 0.95;
-var heavyAirFriction = 0.7;
-var rockAirAcceleration = 0.005;
-var rockGroundAcceleration = 0.0005;
-var rockJumpGroundAcceleration = 0.005;
-var rockJumpAirAcceleration = 0.0008;
+var groundForce = 0.008;
+var groundFriction = {x:0.02, y:0.01};
+var heavyAirFriction = 0.02;
+var rockJumpGroundAcceleration = {x:0.003, y:0.001};
+var minRockYVelocity = 1;
 
 var camera = {x:0, y:0};
 var pointSpacing = 10;
@@ -78,6 +75,7 @@ function init() {
 		rocks[i].rotation = 0;
 		rocks[i].y = 0;
 		rocks[i].maxVelocity = 0;
+    rocks[i].force = {x:0, y:0};
 	}
 
 	rocks[0].onKey = 90;//z
@@ -141,51 +139,50 @@ function update(delta)
 	var slowest;
 	for (var i in rocks) {
 		var rock = rocks[i];
-		if (rock.underGround)
-			rock.acceleration.x = rockGroundAcceleration;
-		else
-			rock.acceleration.x = rockAirAcceleration;
-		rock.on = false;
+		
+    rock.on = false;
 		if (keys[rock.onKey]) {//z
 			rock.on = true;
-			if (rock.underGround)
-				rock.acceleration.y = -rockJumpGroundAcceleration;
 		}
-
-
+		
 		restrictToLevel(rock);
 		rock.underGround = isBelowGround(rock);
+   
+    rock.force.y = rock.velocity.y/delta;
+    rock.force.x = rock.velocity.x/delta;
+    
+    //acceleration
+  
+    rock.acceleration.x = 0;
+    rock.acceleration.y = gravity;
+    if (rock.underGround) {
+			rock.acceleration.x += -rock.force.x * groundFriction.x;
+      if (Math.abs(rock.velocity.y) > minRockYVelocity) {
+			  rock.acceleration.y += -rock.force.y * groundFriction.y;
+      }
+      rock.acceleration.y += -groundForce;
+      if (rock.on) {
+				rock.acceleration.x += rockJumpGroundAcceleration.x;
+				rock.acceleration.y -= rockJumpGroundAcceleration.y;
+      }
+    } else {
+      if (rock.on) {
+        rock.acceleration.x = -rock.force.x * heavyAirFriction;
+      }
+    }
 
-		rock.velocity.y += (rock.acceleration.y + gravity) * delta;
+    // velocity
+
+		rock.velocity.y += rock.acceleration.y * delta;
 		rock.velocity.x += rock.acceleration.x * delta;
-		if (rock.underGround) {
-			rock.velocity.y -= groundForce * delta;
-			if (rock.on) {
-				rock.velocity.x += groundForce * delta;
-			}
-			rock.velocity.y *= groundFriction;
-			rock.velocity.x *= groundFriction;
-		} else {
-			if (rock.on) {
-				rock.velocity.y *= airFriction;
-				rock.velocity.x *= heavyAirFriction;
-			} else {
-				rock.velocity.y *= airFriction;
-				rock.velocity.x *= airFriction;
-			}
-		}
-		rock.acceleration.x *= 0.95;
-		rock.acceleration.y *= 0.95;
 		rock.y += rock.velocity.y * delta;
 		rock.x += rock.velocity.x * delta;
-		rock.rotationVelocity = rock.acceleration.x;
-		rock.rotation += rock.rotationVelocity * delta;
 
 		if (rock.velocity.x > rock.maxVelocity) rock.maxVelocity = rock.velocity.x;
 
 		restrictToLevel(rock);
-		if ( rock.y > viewRect.top ) viewRect.top = rock.y;
-		if ( rock.y < viewRect.bottom ) viewRect.bottom = rock.y;
+    if ( rock.y > viewRect.top ) viewRect.top = rock.y;
+    if ( rock.y < viewRect.bottom ) viewRect.bottom = rock.y;
 		if ( rock.x < viewRect.left ) {
 			slowest = i;
 			viewRect.left = rock.x;
@@ -279,14 +276,14 @@ function restrictToLevel(rock) {
 		rock.velocity.x = 0;
 	}
 	if (rock.y < 0) {
-		rock.y = 0;
-		rock.acceleration.y = 0;
-		rock.velocity.y = 0;
+//    rock.y = 0;
+//    rock.acceleration.y = 0;
+//    rock.velocity.y = 0;
 	}
 	if (rock.y > levelSize.y) {
-		rock.y = levelSize.y;
-		rock.acceleration.y = 0;
-		rock.velocity.y = 0;
+    rock.y = levelSize.y;
+    rock.acceleration.y = 0;
+    rock.velocity.y = 0;
 	}
 }
 
