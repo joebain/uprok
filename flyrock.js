@@ -24,10 +24,14 @@ var groundPoints = 10000;
 var levelSize = {x:groundPoints*pointSpacing, y:screenSize.y * 3};
 var cameraTracking = 0.1;
 var cameraZooming = 0.05;
+var cameraBorder = 0.4;
 
 var worldScale = 0.5;
 var desiredWorldScale = 0.5;
 var ticker = 0;
+var rockTrailPointer = 0;
+var rockTrailLength = 20;
+var rockTrailInterval = 2;
 
 var rocks = [];
 
@@ -84,6 +88,7 @@ function init() {
 		rocks[i].y = 0;
 		rocks[i].maxVelocity = 0;
     rocks[i].force = {x:0, y:0};
+    rocks[i].trail = [];
 	}
 
 	rocks[0].onKey = 90;//z
@@ -206,6 +211,9 @@ function update(delta)
 		if (rock.velocity.x > rock.maxVelocity) rock.maxVelocity = rock.velocity.x;
 
 		restrictToLevel(rock);
+
+    // camera
+
     if ( rock.y > viewRect.top ) viewRect.top = rock.y;
     if ( rock.y < viewRect.bottom ) viewRect.bottom = rock.y;
 		if ( rock.x < viewRect.left ) {
@@ -213,7 +221,23 @@ function update(delta)
 			viewRect.left = rock.x;
 		}
 		if ( rock.x > viewRect.right ) viewRect.right = rock.x;
+
+    // trails
+    if (ticker % rockTrailInterval == 0) {
+      if (rock.on) {
+        rock.trail[rockTrailPointer] = {x:rock.x, y:rock.y};
+      } else {
+        rock.trail[rockTrailPointer] = false;
+      }
+    }
 	}
+
+  if (ticker % 5 == 0) {
+    rockTrailPointer++;
+    if (rockTrailPointer >= rockTrailLength) {
+      rockTrailPointer = 0;
+    }
+  }
 
 	if (rocks.length == 1) {
     panCamera(rocks[0].x - screenSize.x/4, rocks[0].y - screenSize.y/2);
@@ -222,7 +246,7 @@ function update(delta)
 	} else {
     panCamera((viewRect.left + viewRect.right) /2 - screenSize.x/2, (viewRect.top + viewRect.bottom) /2 - screenSize.y/2);
 
-		var tooFar = scaleWorld(canvasSize.x / (viewRect.right-viewRect.left));
+		var tooFar = scaleWorld((canvasSize.x / (viewRect.right-viewRect.left))*(1+cameraBorder));
 
 		if (tooFar && slowest) {
 			//someone is out
@@ -282,10 +306,37 @@ function draw() {
 		if (ticker%5 == 0) {
 			rock.elementSpeed.innerHTML = (rock.velocity.x*100).toFixed(2) + " mp/h";
 			rock.elementScore.innerHTML = (rock.maxVelocity*100).toFixed(2) + " mp/h";
+
 		}
+
+    context.strokeStyle = rock.colour;
+    context.lineWidth = rock.size*0.5*worldScale;
+    context.beginPath();
+    var j;
+    var first = false;
+    context.moveTo((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale);
+    for (var i = 1 ; i < rockTrailLength ; i++) {
+      j = ((rockTrailPointer-i)+rockTrailLength)%rockTrailLength;
+      if (rock.trail[j]) {
+        if (first) {
+          context.moveTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y)*worldScale);
+          first = false;
+        } else {
+          context.lineTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y)*worldScale);
+        }
+      } else {
+        first = true;
+      }
+    }
+    context.stroke();
+
 	}
 	ticker ++;
 
+}
+
+function toScreenSpace(point) {
+  return {x:(point.x-camera.x)*worldScale, y:(point.y - camera.y)*worldScale};
 }
 
 function restrictToLevel(rock) {
