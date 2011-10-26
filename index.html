@@ -3,25 +3,46 @@
 	<script type="application/x-javascript" src="flyrock.js"></script>
 	<style>
 		.speedDiv {
-			width:195px;
-			height:50px;
+			width:125px;
+			height:30px;
 			font-family:Helvetica, sans;
-			font-size:32px;
+			font-size:20px;
 			text-align:right;
 			display:inline-block;
 			margin:0px;
-      padding:0px;
+      padding:2px;
       color:#ffffff;
 		}
 		.button {
-			background-color:black;
-			color:white;
-			cursor:pointer;
-		}
+			background-color:white;
+			color:black;
+      cursor:pointer;
+      border-radius:5px;
+      padding:7px;
+      text-align:center;
+      width: 115px;
+    }
+    #startMessage {
+      background-color:white;
+      color:black;
+      width:400px;
+      height:200px;
+      margin:auto;
+    }
 	</style>
 </head>
 
 <body style="background-color:#000000;">
+  <div id="startMessage">
+    Welcom!
+    <div id="startCount">0.0</div>
+    <div id="startLogo1">1</div>
+    <div id="startLogo2">2</div>
+    <div id="startLogo3">3</div>
+    <div id="startLogo4">4</div>
+    <div id="startLogo5">5</div>
+    <div id="startLogo6">6</div>
+  </div>
 	<div id="container" style="width:800; height:500; position:relative; margin:auto; ">
     <img src="logo.png" style="padding-bottom:5px"/>
 		<canvas id="canvas" width="800" height="400" style="position:relative;"></canvas>
@@ -29,13 +50,19 @@
 		<div id="player2speed" class="speedDiv">0.00 mp/h</div>
 		<div id="player3speed" class="speedDiv">0.00 mp/h</div>
 		<div id="player4speed" class="speedDiv">0.00 mp/h</div>
+		<div id="player5speed" class="speedDiv">0.00 mp/h</div>
+		<div id="player6speed" class="speedDiv">0.00 mp/h</div>
 		<div id="player1score" class="speedDiv">0.00 mp/h</div>
 		<div id="player2score" class="speedDiv">0.00 mp/h</div>
 		<div id="player3score" class="speedDiv">0.00 mp/h</div>
 		<div id="player4score" class="speedDiv">0.00 mp/h</div>
-		<div id="player1Action" class="speedDiv button" onmousedown="pressMe(0);" onmouseup="unPressMe(0);">XXXXXXXX</div>
-		<div id="player2Action" class="speedDiv button" onmousedown="pressMe(1);" onmouseup="unPressMe(1);">XXXXXXXX</div>
-		<div id="player3Action" class="speedDiv button" onmousedown="pressMe(2);" onmouseup="unPressMe(2);">XXXXXXXX</div>
-    <div id="player4Action" class="speedDiv button" onmousedown="pressMe(3);" onmouseup="unPressMe(3);">XXXXXXXX</div>
+		<div id="player5score" class="speedDiv">0.00 mp/h</div>
+		<div id="player6score" class="speedDiv">0.00 mp/h</div>
+		<div id="player1action" class="speedDiv button" onmousedown="pressMe(0);" onmouseup="unPressMe(0);">z</div>
+		<div id="player2action" class="speedDiv button" onmousedown="pressMe(1);" onmouseup="unPressMe(1);">c</div>
+    <div id="player3action" class="speedDiv button" onmousedown="pressMe(2);" onmouseup="unPressMe(2);">x</div>
+    <div id="player4action" class="speedDiv button" onmousedown="pressMe(3);" onmouseup="unPressMe(3);">n</div>
+		<div id="player5action" class="speedDiv button" onmousedown="pressMe(4);" onmouseup="unPressMe(4);">b</div>
+		<div id="player6action" class="speedDiv button" onmousedown="pressMe(5);" onmouseup="unPressMe(5);">m</div>
 	</div>
 </body>
