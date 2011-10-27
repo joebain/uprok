@@ -152,6 +152,7 @@ function startingGrid() {
     x = i * pointSpacing;
     ground[i] = new Vector2f(x,y);
   }
+
 }
 
 function keysup(e) {
@@ -165,6 +166,11 @@ function keysdown(e) {
 var rocksIn = 0;
 var timeInStart = 0;
 var timeLeftInStart = 0;
+var raceCountDown = 0;
+var doingRaceCountDown = false;
+var flashed2 = false;
+var flashed1 = false;
+var flash = 0;
 function run_start(delta) {
   timeInStart += delta;
 
@@ -174,24 +180,76 @@ function run_start(delta) {
       if (!rock.in) {
         rocksIn++
         rock.in = true;
-//        rock.startLogoElement.style.visibility = "visible";
+        rock.startLogoElement.style.visibility = "visible";
+        rock.startLogoElement.style.color = rock.colour;
       }
     }
   }
-  startCountElement.innerHTML = timeLeftInStart.toFixed(2) + "s"
+  startCountElement.innerHTML = Math.ceil(timeLeftInStart/1000);
 
   if (rocksIn >= 1) {
     timeLeftInStart -=delta;
   }
-  if (timeLeftInStart <= 0) {
-    change_state(game_play);
+  if (doingRaceCountDown) {
+    var startMessageHeight = startMessage.style.height;
+//    if (startMessageHeight === "") {
+//      startMessage.style.height = 250;
+//    }
+    startMessageHeight = parseInt(startMessageHeight);
+    if (startMessageHeight <= 30) {
+      startMessage.style.display = "none";
+    } else {
+     startMessage.style.height = startMessageHeight-30;//delta*0.5;
+     console.log("height: " + startMessage.style.height);
+    }
+    raceCountDown -= delta;
+    if (raceCountDown <= 0) {
+      change_state(game_play);
+    } else if (raceCountDown <= 2000 && !flashed2) {
+      flash = 1;
+      flashed2 = true;
+      for (var i in rocks) {
+        rocks[i].on = true;
+      }
+    } else if (raceCountDown <= 1000 && !flashed1) {
+      flash = 1;
+      flashed1 = true;
+      for (var i in rocks) {
+        rocks[i].on = false;
+      }
+    }
+  }
+  else if (timeLeftInStart <= 0 || rocksIn == 6) {
+    console.log("starting game");
+//    startMessage.style.display = "none";
+    camera.y = 300;
+    worldScale = 2;
+    raceCountDown = 3000;
+    doingRaceCountDown = true;
+    flashed1 = false;
+    flashed2 = false;
+    do {
+      var foundOne = false;
+      for (var i in rocks) {
+        if (!rocks[i].in) {
+          removeRock(i);
+          foundOne = true;
+          break;
+        }
+      }
+    } while (foundOne);
+  }
+  if (flash > 0) {
+    flash = flash - (delta*0.002);
+  } else {
+    flash = 0;
   }
   draw();
   
 }
 
 function setForPlay() {
-  startMessage.style.display = "none";
+//  worldScale = 5; // start really big
 }
 
 function change_state(new_state) {
@@ -199,9 +257,11 @@ function change_state(new_state) {
     case game_start:
       startingGrid();
       draw();
-      timeLeftInStart = 5;
+      timeLeftInStart = 10000;
+      doingRaceCountDown = false;
       timeInStart = 0;
       startMessage.style.display = "block";
+      startMessage.style.height = 250;
       break;
     case game_play:
       setForPlay();
@@ -356,31 +416,38 @@ function update(delta)
 
     if (tooFar && slowest) {
       //someone is out
+      removeRock(slowest);
       console.log("booting out " + slowest);
-      rocks[slowest].elementSpeed.innerHTML = "Out";
-      rocks.splice(slowest,1);
     }
   }
 
 }
 
+function removeRock(i) {
+  rocks[i].elementSpeed.innerHTML = "Out";
+  rocks.splice(i,1);
+}
+
 function draw() {
-  worldScale = worldScale*(1-cameraZooming) + desiredWorldScale*cameraZooming;
+  if (mode == game_play) {
+    worldScale = worldScale*(1-cameraZooming) + desiredWorldScale*cameraZooming;
+
+    camera.x = camera.x*(1-cameraTracking) + desiredCamera.x*cameraTracking;
+    camera.y = camera.y*(1-cameraTracking) + desiredCamera.y*cameraTracking;
+  }
   screenSize.x = canvasSize.x / worldScale;
   screenSize.y = canvasSize.y / worldScale;
 
   context.fillStyle="#ffffff";
   context.fillRect(0,0,screenSize.x*worldScale, screenSize.y*worldScale);
 
-  camera.x = camera.x*(1-cameraTracking) + desiredCamera.x*cameraTracking;
-  camera.y = camera.y*(1-cameraTracking) + desiredCamera.y*cameraTracking;
 
 
   var i = Math.floor(camera.x/pointSpacing);
   var lim = Math.ceil((screenSize.x + camera.x)/pointSpacing);
   if (lim >= groundPoints) lim = groundPoints-1;
-  context.strokeStyle = "#000000";
-  context.fillStyle = "#000000";
+  context.strokeStyle = "rgba(0,0,0," + (1-flash) + ")";//"#000000";
+  context.fillStyle = "rgba(0,0,0," + (1-flash) + ")";//"#000000";
   context.strokeWidth = 5;
   context.beginPath();
   context.lineTo(-1000,levelSize.y*worldScale+1000);
@@ -395,8 +462,8 @@ function draw() {
   for (var i in rocks) {
     var rock = rocks[i];
     if (!rock.in) return;
-    context.strokeStyle = "#000000";
-    context.fillStyle = "#000000";
+    context.strokeStyle ="rgba(0,0,0," + (1-flash) + ")";// "#000000";
+    context.fillStyle ="rgba(0,0,0," + (1-flash) + ")";// "#000000";
     context.beginPath();
     context.arc((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale, rock.size*worldScale, 0, Math.PI*2, true);
     context.fill();
