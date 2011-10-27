@@ -20,7 +20,7 @@ var pointSpacing = 10;
 var pointHeight = 30;
 var screenSize = {x:1600, y:800};
 var canvasSize = {x:800, y:400};
-var groundPoints = 10000;
+var groundPoints = 30000;
 var levelSize = {x:groundPoints*pointSpacing, y:screenSize.y * 3};
 var cameraTracking = 0.2;
 var cameraZooming = 0.1;
@@ -126,7 +126,7 @@ function startingGrid() {
     rock.maxVelocity = 0;
     rock.in = false;
     rock.on = false;
-    rock.startLogoElement.style.visibility = "hidden";
+//    rock.startLogoElement.style.visibility = "hidden";
   }
   rocksIn = 0;
 
@@ -180,7 +180,7 @@ function run_start(delta) {
       if (!rock.in) {
         rocksIn++
         rock.in = true;
-        rock.startLogoElement.style.visibility = "visible";
+//        rock.startLogoElement.style.visibility = "visible";
         rock.startLogoElement.style.color = rock.colour;
       }
     }
@@ -478,8 +478,8 @@ function draw() {
 
 
     if (ticker%5 == 0) {
-      rock.elementSpeed.innerHTML = (rock.velocity.x*100).toFixed(2) + " mp/h";
-      rock.elementScore.innerHTML = (rock.maxVelocity*100).toFixed(2) + " mp/h";
+      rock.elementSpeed.innerHTML = (rock.velocity.x*100).toFixed(2) + " mph";
+      rock.elementScore.innerHTML = (rock.maxVelocity*100).toFixed(2) + " mph";
 
     }
 
