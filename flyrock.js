@@ -22,6 +22,13 @@ var screenSize = {x:1600, y:800};
 var canvasSize = {x:800, y:400};
 var groundPoints = 30000;
 var levelSize = {x:groundPoints*pointSpacing, y:screenSize.y * 3};
+
+var numberOfPowers = 100;
+var powers = [];
+var powerSize = 300;
+var powerSpacing;
+var powerOffset = 0;
+
 var cameraTracking = 0.2;
 var cameraZooming = 0.1;
 var cameraBorder = 0.1;
@@ -50,6 +57,8 @@ var mode;
 var game_start = 1;
 var game_play = 2;
 var game_end = 3;
+
+var pause = false;
 
 var startMessage;
 var startCountElement;
@@ -151,6 +160,11 @@ function startingGrid() {
     y = newy;
     x = i * pointSpacing;
     ground[i] = new Vector2f(x,y);
+  }
+
+  powerSpacing = levelSize.x / numberOfPowers;
+  for (var i = 0 ; i < numberOfPowers ; i++) {
+    powers[i] = {x:(i+powerOffset)*powerSpacing+powerSpacing*Math.random(), y:(Math.random()+0.25)*levelSize.y*0.5, taken:false};
   }
 
 }
@@ -257,7 +271,7 @@ function change_state(new_state) {
     case game_start:
       startingGrid();
       draw();
-      timeLeftInStart = 10000;
+      timeLeftInStart = 1000;
       doingRaceCountDown = false;
       timeInStart = 0;
       startMessage.style.display = "block";
@@ -329,6 +343,7 @@ var i;
 var rock;
 function update(delta)
 {
+
   viewRect = {top:Number.MAX_VALUE, bottom:0, left:Number.MAX_VALUE, right:0};
 
   for (i in rocks) {
@@ -390,6 +405,18 @@ function update(delta)
     if (rock.on) {
       rock.trail[rockTrailPointer] = {x:rock.x, y:rock.y};
     }
+
+    // powers
+    var p = Math.floor(camera.x/powerSpacing)+powerOffset;
+    var lim = Math.ceil((screenSize.x + camera.x)/powerSpacing)+powerOffset;
+    var power;
+    for ( ; p < lim ; p ++) {
+      power = powers[p];
+      if ( (power.x - rock.x) * (power.x - rock.x) + (power.y - rock.y) * (power.y - rock.y) < powerSize * powerSize ) {
+        power.taken = true;
+        power.takenBy = i;
+      }
+    }
   }
 
   if (ticker % 5 == 0) {
@@ -448,7 +475,7 @@ function draw() {
   if (lim >= groundPoints) lim = groundPoints-1;
   context.strokeStyle = "rgba(0,0,0," + (1-flash) + ")";//"#000000";
   context.fillStyle = "rgba(0,0,0," + (1-flash) + ")";//"#000000";
-  context.strokeWidth = 5;
+  context.lineWidth = 5*worldScale;
   context.beginPath();
   context.lineTo(-1000,levelSize.y*worldScale+1000);
   for (; i <= lim; i++) {
@@ -458,6 +485,32 @@ function draw() {
   context.closePath();
   context.fill();
 
+  context.lineWidth = 20*worldScale;
+  i = Math.floor(camera.x/powerSpacing)+powerOffset;
+  lim = Math.ceil((screenSize.x + camera.x)/powerSpacing)+powerOffset;
+  var power;
+  for (; i < lim ; i++) {
+    power = powers[i];
+
+    context.strokeStyle = "rgba(0,0,0,1)";
+    context.beginPath();
+    context.arc((power.x - camera.x)*worldScale, (power.y - camera.y)*worldScale, powerSize*worldScale, 0, Math.PI*2, true);
+    context.stroke();
+
+    context.strokeStyle = "rgba(0,0,0,1)";
+    context.beginPath();
+    context.arc((power.x - camera.x)*worldScale, (power.y - camera.y)*worldScale, powerSize*0.9*worldScale, 0, Math.PI*2, true);
+    context.stroke();
+
+    if (power.taken) {
+      context.strokeStyle = rocks[power.takenBy].colour;
+    } else {
+      context.strokeStyle = "rgba(255,255,255,1)";
+    }
+    context.beginPath();
+    context.arc((power.x - camera.x)*worldScale, (power.y - camera.y)*worldScale, powerSize*0.95*worldScale, 0, Math.PI*2, true);
+    context.stroke();
+  }
 
   for (var i in rocks) {
     var rock = rocks[i];
