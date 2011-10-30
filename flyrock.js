@@ -13,7 +13,7 @@ var littleGroundForce = 0.0001;
 var groundFriction = {x:0.02, y:0.01};
 var heavyAirFriction = 0.04;
 var rockJumpGroundAcceleration = {x:0.002, y:0.001};
-var minRockYVelocity = 5;
+var minRockYVelocity = 50;
 
 var camera = {x:0, y:0};
 var desiredCamera = {x:0, y:0};
@@ -29,12 +29,12 @@ var powers = [];
 var powerSize = 300;
 var powerZone = 2;
 var powerSpacing;
-var powerOffset = 0;
+var powerOffset = 10;
 
 var cameraTracking = 0.2;
 var cameraZooming = 0.1;
 var cameraBorder = 0.1;
-var minWorldScale = 0.015;
+var minWorldScale = 0.15;
 var maxWorldScale = 0.7;
 var cameraAhead = 0.1;
 
@@ -45,6 +45,7 @@ var rockTrailPointer = 0;
 var rockTrailLength = 20;
 var rockTrailInterval = 2;
 var rockMinSize = 10;
+var maxRockSpeed = 0;
 
 var rocks = [];
 
@@ -95,6 +96,7 @@ function init() {
     rocks[i].maxVelocity = 0;
     rocks[i].force = {x:0, y:0};
     rocks[i].speed = 1;
+    rocks[i].powers = 1;
     rocks[i].trail = [];
     rocks[i].speedDivId = "player" + (i+1) + "speed";
     rocks[i].scoreDivId = "player" + (i+1) + "score";
@@ -133,7 +135,7 @@ function startingGrid() {
   for (var i in rocks) {
     var rock = rocks[i];
     rock.x = i * 40 + 100;
-    rock.y = levelSize.y -= 600;
+    rock.y = levelSize.y - 800;
     rock.velocity = {x:0, y:0};
     rock.acceleration = {x:0, y:0};
     rock.trail = [];
@@ -141,7 +143,7 @@ function startingGrid() {
     rock.maxVelocity = 0;
     rock.in = false;
     rock.on = false;
-    rock.powers = 0;
+    rock.powers = 1;
     rock.weight = 1;
 //    rock.startLogoElement.style.visibility = "hidden";
   }
@@ -149,12 +151,12 @@ function startingGrid() {
 
 // make the level
 
-  var y = levelSize.y - 400;
+  var y = levelSize.y - 700;
   var x = 0;
   var yVel = 0;
   var maxYVel = 1;
-  var borderTopY = levelSize.y - 1000;
-  var borderBottomY = levelSize.y - 300;
+  var borderTopY = levelSize.y - 1200;
+  var borderBottomY = levelSize.y - 600;
   for (var i = 0 ; i <= groundPoints ; i++) {
     maxYVel = i /500 + 1;
     if (maxYVel > 30) maxYVel = 30;
@@ -174,10 +176,14 @@ function startingGrid() {
 
   powerSpacing = levelSize.x / numberOfPowers;
   for (var i = 0 ; i < numberOfPowers ; i++) {
-    powers[i] = {x:(i+powerOffset)*powerSpacing+powerSpacing*Math.random(), y:(Math.random()-0.25)*300, taken:false};
+    powers[i] = {x:i*powerSpacing+powerSpacing*Math.random(), y:(Math.random()-0.75)*1000, taken:false};
     powers[i].y += ground[Math.round(powers[i].x/pointSpacing)].y;
+    if (i < powerOffset) powers[i].y = 0;
 
   }
+
+  minWorldScale = 0.15;
+  maxRockSpeed = 0;
 
 }
 
@@ -248,7 +254,8 @@ function run_start(delta) {
   else if (timeLeftInStart <= 0 || rocksIn == 6) {
     console.log("starting game");
 //    startMessage.style.display = "none";
-    camera.y = 300;
+    camera.y = levelSize.y - 900;
+    desiredCamera.y = levelSize.y - 900;
     worldScale = 2;
     raceCountDown = 3000;
     doingRaceCountDown = true;
@@ -439,8 +446,8 @@ function update(delta)
     }
 
     // powers
-    var p = Math.floor(camera.x/powerSpacing)+powerOffset;
-    var lim = Math.ceil((screenSize.x + camera.x)/powerSpacing)+powerOffset;
+    var p = Math.floor(camera.x/powerSpacing);
+    var lim = Math.ceil((screenSize.x + camera.x)/powerSpacing);
     var power;
     var groundBit;
     for ( ; p < lim ; p ++) {
@@ -451,6 +458,10 @@ function update(delta)
           rock.powers +=1;
           rock.size = rock.powers*2+rockMinSize;
           rock.speed = Math.log(rock.powers/2)+1;
+          if (rock.speed > maxRockSpeed) {
+            maxRockSpeed = rock.speed;
+            minWorldScale = Math.min(0.15,0.1/rock.speed);
+          }
           rock.weight = Math.log(rock.powers/2)+1;
           power.takenBy = i;
           var g = Math.floor((power.x-powerSize*powerZone)/pointSpacing);
@@ -463,12 +474,12 @@ function update(delta)
             var xDistSq = (power.x - groundBit.x) * (power.x - groundBit.x);
             var yDistSq = (power.y - groundBit.y) * (power.y - groundBit.y);
             var pSizeSq = (powerSize * powerSize * powerZone*powerZone);
-            if ( xDistSq + yDistSq < pSizeSq || power.y < groundBit.y ) {
+            if ( xDistSq + yDistSq < pSizeSq || power.y > groundBit.y ) {
 //              (px-gx)*(px-gx)+(py-gy)*(py-gy) = pS*pS*pZ*2;
 //              (py-gy)^2 = ps^2*pZ*2 - (px-gx)^2;
 //              py-gy = sqrt(ps^2*pZ*2 - (px-gx)^2);
 //              gy = py-sqrt(ps^2*pZ*2 - (px-gx)^2)
-              groundBit.y = power.y - Math.sqrt(pSizeSq - xDistSq);
+              groundBit.y = power.y + Math.sqrt(pSizeSq - xDistSq);
             }
           }
         }
@@ -543,9 +554,9 @@ function draw() {
   context.fill();
 
   context.lineWidth = 20*worldScale;
-  i = Math.floor(camera.x/powerSpacing)+powerOffset;
+  i = Math.floor(camera.x/powerSpacing);
   i = i < 0 ? 0 : i;
-  lim = Math.ceil((screenSize.x + camera.x)/powerSpacing)+powerOffset;
+  lim = Math.ceil((screenSize.x + camera.x)/powerSpacing);
   lim = lim >= numberOfPowers ? numberOfPowers-1 : lim;
   var power;
   var scale = 1;
