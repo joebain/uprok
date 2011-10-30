@@ -9,10 +9,11 @@ var Vector2f = function(x, y) {
 }
 var gravity = 0.004;
 var groundForce = 0.008;
+var littleGroundForce = 0.0001;
 var groundFriction = {x:0.02, y:0.01};
-var heavyAirFriction = 0.02;
-var rockJumpGroundAcceleration = {x:0.003, y:0.001};
-var minRockYVelocity = 1;
+var heavyAirFriction = 0.04;
+var rockJumpGroundAcceleration = {x:0.002, y:0.001};
+var minRockYVelocity = 5;
 
 var camera = {x:0, y:0};
 var desiredCamera = {x:0, y:0};
@@ -20,19 +21,20 @@ var pointSpacing = 10;
 var pointHeight = 30;
 var screenSize = {x:1600, y:800};
 var canvasSize = {x:800, y:400};
-var groundPoints = 30000;
-var levelSize = {x:groundPoints*pointSpacing, y:screenSize.y * 3};
+var groundPoints = 300000;
+var levelSize = {x:groundPoints*pointSpacing, y:screenSize.y * 1000};
 
-var numberOfPowers = 100;
+var numberOfPowers = 1000;
 var powers = [];
 var powerSize = 300;
+var powerZone = 2;
 var powerSpacing;
 var powerOffset = 0;
 
 var cameraTracking = 0.2;
 var cameraZooming = 0.1;
 var cameraBorder = 0.1;
-var minWorldScale = 0.15;
+var minWorldScale = 0.015;
 var maxWorldScale = 0.7;
 var cameraAhead = 0.1;
 
@@ -42,6 +44,7 @@ var ticker = 0;
 var rockTrailPointer = 0;
 var rockTrailLength = 20;
 var rockTrailInterval = 2;
+var rockMinSize = 10;
 
 var rocks = [];
 
@@ -52,6 +55,7 @@ var thisTime = 0;
 var delta = 0;
 var interval = 0;
 var targetInterval = 17;
+var playerCountDown = 1000;
 
 var mode;
 var game_start = 1;
@@ -59,6 +63,7 @@ var game_play = 2;
 var game_end = 3;
 
 var pause = false;
+var manualControl = false;
 
 var startMessage;
 var startCountElement;
@@ -82,13 +87,14 @@ function init() {
     rocks[i] = {};
     rocks[i].x = pointSpacing * 2;
     rocks[i].y = 300;
-    rocks[i].size = 10;
+    rocks[i].size = rockMinSize;
     rocks[i].velocity = {x:0, y:0};
     rocks[i].acceleration = {x:0, y:0};
     rocks[i].x = 0;
     rocks[i].y = 0;
     rocks[i].maxVelocity = 0;
     rocks[i].force = {x:0, y:0};
+    rocks[i].speed = 1;
     rocks[i].trail = [];
     rocks[i].speedDivId = "player" + (i+1) + "speed";
     rocks[i].scoreDivId = "player" + (i+1) + "score";
@@ -127,7 +133,7 @@ function startingGrid() {
   for (var i in rocks) {
     var rock = rocks[i];
     rock.x = i * 40 + 100;
-    rock.y = 400;
+    rock.y = levelSize.y -= 600;
     rock.velocity = {x:0, y:0};
     rock.acceleration = {x:0, y:0};
     rock.trail = [];
@@ -135,17 +141,20 @@ function startingGrid() {
     rock.maxVelocity = 0;
     rock.in = false;
     rock.on = false;
+    rock.powers = 0;
+    rock.weight = 1;
 //    rock.startLogoElement.style.visibility = "hidden";
   }
   rocksIn = 0;
 
 // make the level
 
-  var y = 400;
+  var y = levelSize.y - 400;
   var x = 0;
   var yVel = 0;
   var maxYVel = 1;
-  var borderY = 300;
+  var borderTopY = levelSize.y - 1000;
+  var borderBottomY = levelSize.y - 300;
   for (var i = 0 ; i <= groundPoints ; i++) {
     maxYVel = i /500 + 1;
     if (maxYVel > 30) maxYVel = 30;
@@ -155,8 +164,9 @@ function startingGrid() {
       if (yVel > maxYVel) yVel = maxYVel;
       if (yVel < -maxYVel) yVel = -maxYVel;
       newy = y + yVel;
-      if (y < borderY || y > levelSize.y-borderY) yVel = 0;
-    } while (newy < borderY || newy > levelSize.y-borderY);
+      if (y < borderTopY || y > borderBottomY) yVel = 0;
+      borderTopY -= 20;
+    } while (newy < borderTopY || newy > borderBottomY);
     y = newy;
     x = i * pointSpacing;
     ground[i] = new Vector2f(x,y);
@@ -164,7 +174,9 @@ function startingGrid() {
 
   powerSpacing = levelSize.x / numberOfPowers;
   for (var i = 0 ; i < numberOfPowers ; i++) {
-    powers[i] = {x:(i+powerOffset)*powerSpacing+powerSpacing*Math.random(), y:(Math.random()+0.25)*levelSize.y*0.5, taken:false};
+    powers[i] = {x:(i+powerOffset)*powerSpacing+powerSpacing*Math.random(), y:(Math.random()-0.25)*300, taken:false};
+    powers[i].y += ground[Math.round(powers[i].x/pointSpacing)].y;
+
   }
 
 }
@@ -271,7 +283,7 @@ function change_state(new_state) {
     case game_start:
       startingGrid();
       draw();
-      timeLeftInStart = 1000;
+      timeLeftInStart = playerCountDown;
       doingRaceCountDown = false;
       timeInStart = 0;
       startMessage.style.display = "block";
@@ -352,13 +364,16 @@ function update(delta)
     rock.on = false;
     if (keys[rock.onKey]) {//z
       rock.on = true;
+//      rock.weight = 1.5;
+    } else {
+//      rock.wight = 1;
     }
 
     restrictToLevel(rock);
     rock.underGround = isBelowGround(rock);
 
-    rock.force.y = rock.velocity.y/delta;
-    rock.force.x = rock.velocity.x/delta;
+    rock.force.y = (rock.velocity.y/rock.weight)/delta;
+    rock.force.x = (rock.velocity.x/rock.weight)/delta;
 
     //acceleration
 
@@ -371,12 +386,12 @@ function update(delta)
       }
       rock.acceleration.y += -groundForce;
       if (rock.on) {
-        rock.acceleration.x += rockJumpGroundAcceleration.x;
+        rock.acceleration.x += rockJumpGroundAcceleration.x*rock.speed;
         rock.acceleration.y -= rockJumpGroundAcceleration.y;
       }
     } else {
       if (rock.on) {
-        rock.acceleration.x = -rock.force.x * heavyAirFriction;
+        rock.acceleration.x = -rock.force.x * heavyAirFriction*rock.speed;
       }
     }
 
@@ -384,8 +399,25 @@ function update(delta)
 
     rock.velocity.y += rock.acceleration.y * delta;
     rock.velocity.x += rock.acceleration.x * delta;
-    rock.y += rock.velocity.y * delta;
-    rock.x += rock.velocity.x * delta;
+    if ( manualControl) {
+      var speed = 50;
+      if ( keys[38]) { //up
+        rock.y -= speed;
+      }
+      if (keys[40]) { //down
+        rock.y += speed;
+      }
+      if (keys[37]) { //left
+        rock.x -= speed;
+      }
+      if (keys[39]) { //right
+        rock.x += speed;
+      }
+      worldScale = 0.2;
+    } else {
+      rock.y += rock.velocity.y * delta;
+      rock.x += rock.velocity.x * delta;
+    }
 
     if (rock.velocity.x > rock.maxVelocity) rock.maxVelocity = rock.velocity.x;
 
@@ -410,11 +442,36 @@ function update(delta)
     var p = Math.floor(camera.x/powerSpacing)+powerOffset;
     var lim = Math.ceil((screenSize.x + camera.x)/powerSpacing)+powerOffset;
     var power;
+    var groundBit;
     for ( ; p < lim ; p ++) {
       power = powers[p];
-      if ( (power.x - rock.x) * (power.x - rock.x) + (power.y - rock.y) * (power.y - rock.y) < powerSize * powerSize ) {
-        power.taken = true;
-        power.takenBy = i;
+      if ( !power.taken) {
+        if ( (power.x - rock.x) * (power.x - rock.x) + (power.y - rock.y) * (power.y - rock.y) < powerSize * powerSize ) {
+          power.taken = true;
+          rock.powers +=1;
+          rock.size = rock.powers*2+rockMinSize;
+          rock.speed = Math.log(rock.powers/2)+1;
+          rock.weight = Math.log(rock.powers/2)+1;
+          power.takenBy = i;
+          var g = Math.floor((power.x-powerSize*powerZone)/pointSpacing);
+          g = g < 0 ? 0 : g;
+          var gLim = Math.ceil((power.x+powerSize*powerZone)/pointSpacing);
+          gLim = gLim >= groundPoints ? groundPoints-1 : gLim;
+//          var invPowerY = levelSize.y - power.y;
+          for (; g < gLim; g++) {
+            groundBit = ground[g];
+            var xDistSq = (power.x - groundBit.x) * (power.x - groundBit.x);
+            var yDistSq = (power.y - groundBit.y) * (power.y - groundBit.y);
+            var pSizeSq = (powerSize * powerSize * powerZone*powerZone);
+            if ( xDistSq + yDistSq < pSizeSq || power.y < groundBit.y ) {
+//              (px-gx)*(px-gx)+(py-gy)*(py-gy) = pS*pS*pZ*2;
+//              (py-gy)^2 = ps^2*pZ*2 - (px-gx)^2;
+//              py-gy = sqrt(ps^2*pZ*2 - (px-gx)^2);
+//              gy = py-sqrt(ps^2*pZ*2 - (px-gx)^2)
+              groundBit.y = power.y - Math.sqrt(pSizeSq - xDistSq);
+            }
+          }
+        }
       }
     }
   }
@@ -479,7 +536,7 @@ function draw() {
   context.beginPath();
   context.lineTo(-1000,levelSize.y*worldScale+1000);
   for (; i <= lim; i++) {
-    context.lineTo((ground[i].x - camera.x)*worldScale, ((levelSize.y - ground[i].y) - camera.y)*worldScale);
+    context.lineTo((ground[i].x - camera.x)*worldScale, (ground[i].y - camera.y)*worldScale);
   }
   context.lineTo(levelSize.x*worldScale+1000, levelSize.y*worldScale+1000);
   context.closePath();
@@ -487,19 +544,24 @@ function draw() {
 
   context.lineWidth = 20*worldScale;
   i = Math.floor(camera.x/powerSpacing)+powerOffset;
+  i = i < 0 ? 0 : i;
   lim = Math.ceil((screenSize.x + camera.x)/powerSpacing)+powerOffset;
+  lim = lim >= numberOfPowers ? numberOfPowers-1 : lim;
   var power;
+  var scale = 1;
   for (; i < lim ; i++) {
     power = powers[i];
+    scale = power.taken ? powerZone : 1;
+
 
     context.strokeStyle = "rgba(0,0,0,1)";
     context.beginPath();
-    context.arc((power.x - camera.x)*worldScale, (power.y - camera.y)*worldScale, powerSize*worldScale, 0, Math.PI*2, true);
+    context.arc((power.x - camera.x)*worldScale, (power.y - camera.y)*worldScale, powerSize*scale*worldScale, 0, Math.PI*2, true);
     context.stroke();
 
     context.strokeStyle = "rgba(0,0,0,1)";
     context.beginPath();
-    context.arc((power.x - camera.x)*worldScale, (power.y - camera.y)*worldScale, powerSize*0.9*worldScale, 0, Math.PI*2, true);
+    context.arc((power.x - camera.x)*worldScale, (power.y - camera.y)*worldScale, powerSize*0.9*scale*worldScale, 0, Math.PI*2, true);
     context.stroke();
 
     if (power.taken) {
@@ -508,7 +570,7 @@ function draw() {
       context.strokeStyle = "rgba(255,255,255,1)";
     }
     context.beginPath();
-    context.arc((power.x - camera.x)*worldScale, (power.y - camera.y)*worldScale, powerSize*0.95*worldScale, 0, Math.PI*2, true);
+    context.arc((power.x - camera.x)*worldScale, (power.y - camera.y)*worldScale, powerSize*0.95*scale*worldScale, 0, Math.PI*2, true);
     context.stroke();
   }
 
@@ -537,7 +599,7 @@ function draw() {
     }
 
     context.strokeStyle = rock.colour;
-    context.lineWidth = rock.size*0.5*worldScale;
+    context.lineWidth = rock.size*rock.size*worldScale*0.1;
     context.beginPath();
     var j;
     var first = false;
@@ -602,7 +664,7 @@ function isBelowGround(position) {
     var d = (groundPoint - x1) / (x2 - x1);
     h = y1 * d + y2 * (1-d);
   }
-  if (position.y > (levelSize.y - h)) return true;
+  if (position.y > h) return true;
   else return false;
 }
 
