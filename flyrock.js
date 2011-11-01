@@ -12,7 +12,8 @@ var groundForce = 0.008;
 var littleGroundForce = 0.0001;
 var groundFriction = {x:0.02, y:0.01};
 var heavyAirFriction = 0.04;
-var rockJumpGroundAcceleration = {x:0.002, y:0.001};
+var airFriction = 0.01;
+var rockJumpGroundAcceleration = {x:0.0025, y:0.002};
 var minRockYVelocity = 50;
 
 var camera = {x:0, y:0};
@@ -46,6 +47,8 @@ var rockTrailLength = 20;
 var rockTrailInterval = 2;
 var rockMinSize = 10;
 var maxRockSpeed = 0;
+var rocktrailWidth = 0.03;
+var terminalYVel = 10;
 
 var rocks = [];
 
@@ -57,6 +60,8 @@ var delta = 0;
 var interval = 0;
 var targetInterval = 17;
 var playerCountDown = 1000;
+var endGame = false;
+var leftInGameTime = 0;
 
 var mode;
 var game_start = 1;
@@ -185,6 +190,8 @@ function startingGrid() {
   minWorldScale = 0.15;
   maxRockSpeed = 0;
 
+  endGame = false;
+  leftInGameTime = 0;
 }
 
 function keysup(e) {
@@ -281,6 +288,17 @@ function run_start(delta) {
   
 }
 
+var timeInEnd = 0;
+function run_end(delta) {
+  draw();
+  timeInEnd -= delta;
+
+  if (timeInEnd <= 0) {
+    change_state(game_start);
+  }
+  
+}
+
 function setForPlay() {
 //  worldScale = 5; // start really big
 }
@@ -300,6 +318,11 @@ function change_state(new_state) {
       setForPlay();
       break;
     case game_end:
+      endGame = false;
+      startMessage.style.display = "block";
+      startMessage.style.height = 250;
+      startCountElement.innerHTML = "Someone Won!";
+      timeInEnd = 3000;
       break;
   }
   mode = new_state;
@@ -365,6 +388,19 @@ function update(delta)
 
   viewRect = {top:Number.MAX_VALUE, bottom:0, left:Number.MAX_VALUE, right:0};
 
+  if (rocks.length == 1) {
+    if (!endGame) {
+      endGame = true;
+      leftInGameTime = 10000;
+    }
+
+    leftInGameTime -= delta;
+
+    if (leftInGameTime < 0) {
+      change_state(game_end);
+    }
+  }
+
   for (i in rocks) {
     rock = rocks[i];
 
@@ -388,6 +424,10 @@ function update(delta)
     rock.acceleration.y = gravity;
     if (rock.underGround) {
       rock.acceleration.x += -rock.force.x * groundFriction.x;
+      // attempt to stop the skimming that often happens at the start
+//      if (rock.underGround < 10 && rock.velocity.y > 0 && rock.velocity.y < gravity*0.5) {
+//        rock.acceleration.y += gravity;
+//      } else
       if (Math.abs(rock.velocity.y) > minRockYVelocity) {
         rock.acceleration.y += -rock.force.y * groundFriction.y;
       }
@@ -398,12 +438,14 @@ function update(delta)
       }
     } else {
       if (rock.on) {
-        rock.acceleration.x = -rock.force.x * heavyAirFriction*rock.speed;
+        rock.acceleration.x -= rock.force.x * heavyAirFriction*rock.speed;
       }
+      rock.acceleration.y -= rock.force.y * airFriction;
     }
 
     // velocity
 
+//    if (rock.velocity.y < terminalYVel) rock.velocity.y = terminalYVel;
     rock.velocity.y += rock.acceleration.y * delta;
     rock.velocity.x += rock.acceleration.x * delta;
     if ( manualControl) {
@@ -457,12 +499,13 @@ function update(delta)
           power.taken = true;
           rock.powers +=1;
           rock.size = rock.powers*2+rockMinSize;
-          rock.speed = Math.log(rock.powers/2)+1;
+          rock.speed = Math.log(rock.powers)/8+1;
+          rock.speed = rock.speed < 1 ? 1 : rock.speed;
           if (rock.speed > maxRockSpeed) {
             maxRockSpeed = rock.speed;
             minWorldScale = Math.min(0.15,0.1/rock.speed);
           }
-          rock.weight = Math.log(rock.powers/2)+1;
+          rock.weight = Math.log(rock.powers)/2+1;
           power.takenBy = i;
           var g = Math.floor((power.x-powerSize*powerZone)/pointSpacing);
           g = g < 0 ? 0 : g;
@@ -591,14 +634,14 @@ function draw() {
     context.strokeStyle ="rgba(0,0,0," + (1-flash) + ")";// "#000000";
     context.fillStyle ="rgba(0,0,0," + (1-flash) + ")";// "#000000";
     context.beginPath();
-    context.arc((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale, rock.size*worldScale, 0, Math.PI*2, true);
+    context.arc((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale, rockMinSize*worldScale, 0, Math.PI*2, true);
     context.fill();
 
     if (rock.on) {
       context.strokeStyle = "#000000";
       context.fillStyle = rock.colour;
       context.beginPath();
-      context.arc((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale, (rock.size*0.5)*worldScale, 0, Math.PI*2, true);
+      context.arc((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale, (rockMinSize*0.5)*worldScale, 0, Math.PI*2, true);
       context.fill();
     }
 
@@ -610,7 +653,7 @@ function draw() {
     }
 
     context.strokeStyle = rock.colour;
-    context.lineWidth = rock.size*rock.size*worldScale*0.1;
+    context.lineWidth = rock.size*rockMinSize*rocktrailWidth*worldScale;
     context.beginPath();
     var j;
     var first = false;
@@ -622,7 +665,24 @@ function draw() {
           context.moveTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y)*worldScale);
           first = false;
         } else {
-          context.lineTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y)*worldScale);
+          context.lineTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y - rock.size*0.5)*worldScale);
+        }
+      } else {
+        first = true;
+      }
+    }
+    context.stroke();
+    context.beginPath();
+    first = false;
+    context.moveTo((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale);
+    for (var i = 0 ; i < rockTrailLength ; i++) {
+      j = ((rockTrailPointer-i)+rockTrailLength)%rockTrailLength;
+      if (rock.trail[j]) {
+        if (first) {
+          context.moveTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y)*worldScale);
+          first = false;
+        } else {
+          context.lineTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y + rock.size*0.5)*worldScale);
         }
       } else {
         first = true;
@@ -632,6 +692,14 @@ function draw() {
 
   }
   ticker ++;
+
+  if (endGame) {
+    context.font = "100px ostrich-bold";
+    var textToDisplay = (leftInGameTime/1000).toFixed(0);
+    var textMeasurements = context.measureText(textToDisplay);
+    context.fillStyle = "#000000";
+    context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5-50);
+  }
 
 }
 
@@ -675,8 +743,8 @@ function isBelowGround(position) {
     var d = (groundPoint - x1) / (x2 - x1);
     h = y1 * d + y2 * (1-d);
   }
-  if (position.y > h) return true;
-  else return false;
+  if (position.y > h) return position.y-h;
+  else return 0;
 }
 
 function pressMe(i) {
