@@ -25,17 +25,10 @@ var canvasSize = {x:800, y:400};
 var groundPoints = 300000;
 var levelSize = {x:groundPoints*pointSpacing, y:screenSize.y * 1000};
 
-var numberOfPowers = 1000;
-var powers = [];
-var powerSize = 300;
-var powerZone = 2;
-var powerSpacing;
-var powerOffset = 10;
-
 var cameraTracking = 0.2;
 var cameraZooming = 0.1;
-var cameraBorder = 0.1;
-var minWorldScale = 0.15;
+var cameraBorder = 0.15;
+var minWorldScale = 0.2;
 var maxWorldScale = 0.7;
 var cameraAhead = 0.1;
 
@@ -51,6 +44,7 @@ var rocktrailWidth = 0.03;
 var terminalYVel = 10;
 
 var rocks = [];
+var rockMap = {};
 
 var keys = {};
 
@@ -89,6 +83,13 @@ function init() {
   startMessage = document.getElementById("startMessage");
   startCountElement = document.getElementById("startCount");
 
+
+  change_state(game_start);
+
+  loop();
+}
+
+function startingGrid() {
   for (var i = 0 ; i < 6 ; i++) {
     rocks[i] = {};
     rocks[i].x = pointSpacing * 2;
@@ -101,12 +102,13 @@ function init() {
     rocks[i].maxVelocity = 0;
     rocks[i].force = {x:0, y:0};
     rocks[i].speed = 1;
-    rocks[i].powers = 1;
     rocks[i].trail = [];
     rocks[i].speedDivId = "player" + (i+1) + "speed";
     rocks[i].scoreDivId = "player" + (i+1) + "score";
     rocks[i].actionDivId = "player" + (i+1) + "action";
     rocks[i].startLogoElement = document.getElementById("startLogo"+(i+1));
+    rocks[i].originalNumber = i;
+    rockMap[i] = rocks[i];
   }
 
   rocks[0].onKey = 90;//z
@@ -129,15 +131,7 @@ function init() {
     rocks[i].elementScore = document.getElementById(rocks[i].scoreDivId);
     rocks[i].elementAction = document.getElementById(rocks[i].actionDivId);
     rocks[i].elementAction.style.backgroundColor = rocks[i].colour;
-  }
 
-  change_state(game_start);
-
-  loop();
-}
-
-function startingGrid() {
-  for (var i in rocks) {
     var rock = rocks[i];
     rock.x = i * 40 + 100;
     rock.y = levelSize.y - 800;
@@ -148,8 +142,8 @@ function startingGrid() {
     rock.maxVelocity = 0;
     rock.in = false;
     rock.on = false;
-    rock.powers = 1;
     rock.weight = 1;
+    rock.startLogoElement.style.color = "#ffffff";
 //    rock.startLogoElement.style.visibility = "hidden";
   }
   rocksIn = 0;
@@ -179,19 +173,18 @@ function startingGrid() {
     ground[i] = new Vector2f(x,y);
   }
 
-  powerSpacing = levelSize.x / numberOfPowers;
-  for (var i = 0 ; i < numberOfPowers ; i++) {
-    powers[i] = {x:i*powerSpacing+powerSpacing*Math.random(), y:(Math.random()-0.75)*1000, taken:false};
-    powers[i].y += ground[Math.round(powers[i].x/pointSpacing)].y;
-    if (i < powerOffset) powers[i].y = 0;
-
-  }
-
   minWorldScale = 0.15;
   maxRockSpeed = 0;
 
   endGame = false;
   leftInGameTime = 0;
+
+
+  camera.y = levelSize.y - 900;
+  desiredCamera.y = levelSize.y - 900;
+  camera.x = 0;
+  desiredCamera.x = 0;
+  worldScale = 2;
 }
 
 function keysup(e) {
@@ -224,10 +217,10 @@ function run_start(delta) {
       }
     }
   }
-  startCountElement.innerHTML = Math.ceil(timeLeftInStart/1000);
 
-  if (rocksIn >= 1) {
+  if (rocksIn >= 2) {
     timeLeftInStart -=delta;
+    startCountElement.innerHTML = Math.ceil(timeLeftInStart/1000);
   }
   if (doingRaceCountDown) {
     var startMessageHeight = startMessage.style.height;
@@ -291,12 +284,14 @@ function run_start(delta) {
 var timeInEnd = 0;
 function run_end(delta) {
   draw();
-  timeInEnd -= delta;
 
-  if (timeInEnd <= 0) {
+  if (startMessage.style.height < 250) {
+    startMessage.style.height += 10;
+  } else {
+    startMessage.style.height = 250;
     change_state(game_start);
   }
-  
+
 }
 
 function setForPlay() {
@@ -320,8 +315,30 @@ function change_state(new_state) {
     case game_end:
       endGame = false;
       startMessage.style.display = "block";
-      startMessage.style.height = 250;
-      startCountElement.innerHTML = "Someone Won!";
+      startMessage.style.height = 0;
+      var winnerText = "Someone Won!";
+      switch (rocks[0].originalNumber) {
+        case 0:
+          winnerText = "Pink";
+          break;
+        case 1:
+          winnerText = "Green";
+          break;
+        case 2:
+          winnerText = "Blue";
+          break;
+        case 3:
+          winnerText = "Orange";
+          break;
+        case 4:
+          winnerText = "Purple";
+          break;
+        case 5:
+          winnerText = "Yellow";
+          break;
+      }
+      startCountElement.innerHTML = winnerText + " Won!";
+      startCountElement.style.color = rocks[0].colour;
       timeInEnd = 3000;
       break;
   }
@@ -486,48 +503,6 @@ function update(delta)
     if (rock.on) {
       rock.trail[rockTrailPointer] = {x:rock.x, y:rock.y};
     }
-
-    // powers
-    var p = Math.floor(camera.x/powerSpacing);
-    var lim = Math.ceil((screenSize.x + camera.x)/powerSpacing);
-    var power;
-    var groundBit;
-    for ( ; p < lim ; p ++) {
-      power = powers[p];
-      if ( !power.taken) {
-        if ( (power.x - rock.x) * (power.x - rock.x) + (power.y - rock.y) * (power.y - rock.y) < powerSize * powerSize ) {
-          power.taken = true;
-          rock.powers +=1;
-          rock.size = rock.powers*2+rockMinSize;
-          rock.speed = Math.log(rock.powers)/8+1;
-          rock.speed = rock.speed < 1 ? 1 : rock.speed;
-          if (rock.speed > maxRockSpeed) {
-            maxRockSpeed = rock.speed;
-            minWorldScale = Math.min(0.15,0.1/rock.speed);
-          }
-          rock.weight = Math.log(rock.powers)/2+1;
-          power.takenBy = i;
-          var g = Math.floor((power.x-powerSize*powerZone)/pointSpacing);
-          g = g < 0 ? 0 : g;
-          var gLim = Math.ceil((power.x+powerSize*powerZone)/pointSpacing);
-          gLim = gLim >= groundPoints ? groundPoints-1 : gLim;
-//          var invPowerY = levelSize.y - power.y;
-          for (; g < gLim; g++) {
-            groundBit = ground[g];
-            var xDistSq = (power.x - groundBit.x) * (power.x - groundBit.x);
-            var yDistSq = (power.y - groundBit.y) * (power.y - groundBit.y);
-            var pSizeSq = (powerSize * powerSize * powerZone*powerZone);
-            if ( xDistSq + yDistSq < pSizeSq || power.y > groundBit.y ) {
-//              (px-gx)*(px-gx)+(py-gy)*(py-gy) = pS*pS*pZ*2;
-//              (py-gy)^2 = ps^2*pZ*2 - (px-gx)^2;
-//              py-gy = sqrt(ps^2*pZ*2 - (px-gx)^2);
-//              gy = py-sqrt(ps^2*pZ*2 - (px-gx)^2)
-              groundBit.y = power.y + Math.sqrt(pSizeSq - xDistSq);
-            }
-          }
-        }
-      }
-    }
   }
 
   if (ticker % 5 == 0) {
@@ -595,38 +570,6 @@ function draw() {
   context.lineTo(levelSize.x*worldScale+1000, levelSize.y*worldScale+1000);
   context.closePath();
   context.fill();
-
-  context.lineWidth = 20*worldScale;
-  i = Math.floor(camera.x/powerSpacing);
-  i = i < 0 ? 0 : i;
-  lim = Math.ceil((screenSize.x + camera.x)/powerSpacing);
-  lim = lim >= numberOfPowers ? numberOfPowers-1 : lim;
-  var power;
-  var scale = 1;
-  for (; i < lim ; i++) {
-    power = powers[i];
-    scale = power.taken ? powerZone : 1;
-
-
-    context.strokeStyle = "rgba(0,0,0,1)";
-    context.beginPath();
-    context.arc((power.x - camera.x)*worldScale, (power.y - camera.y)*worldScale, powerSize*scale*worldScale, 0, Math.PI*2, true);
-    context.stroke();
-
-    context.strokeStyle = "rgba(0,0,0,1)";
-    context.beginPath();
-    context.arc((power.x - camera.x)*worldScale, (power.y - camera.y)*worldScale, powerSize*0.9*scale*worldScale, 0, Math.PI*2, true);
-    context.stroke();
-
-    if (power.taken) {
-      context.strokeStyle = rocks[power.takenBy].colour;
-    } else {
-      context.strokeStyle = "rgba(255,255,255,1)";
-    }
-    context.beginPath();
-    context.arc((power.x - camera.x)*worldScale, (power.y - camera.y)*worldScale, powerSize*0.95*scale*worldScale, 0, Math.PI*2, true);
-    context.stroke();
-  }
 
   for (var i in rocks) {
     var rock = rocks[i];
@@ -748,10 +691,10 @@ function isBelowGround(position) {
 }
 
 function pressMe(i) {
-  keys[rocks[i].onKey] = true;
+  keys[rockMap[i].onKey] = true;
 }
 function unPressMe(i) {
-  keys[rocks[i].onKey] = false;
+  keys[rockMap[i].onKey] = false;
 }
 
 window.onload = init;
