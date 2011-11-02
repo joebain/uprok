@@ -53,7 +53,7 @@ var thisTime = 0;
 var delta = 0;
 var interval = 0;
 var targetInterval = 17;
-var playerCountDown = 1000;
+var playerCountDown = 10000;
 var endGame = false;
 var leftInGameTime = 0;
 
