@@ -1,10 +1,14 @@
 <head>
-	<title>FlyRock</title>
+	<title>FLYROK</title>
 	<script type="application/x-javascript" src="flyrock.js"></script>
   <style>
     @font-face {
       font-family: "ostrich-bold";
       src: url("ostrich-bold.ttf");
+    }
+    @font-face {
+      font-family: "ostrich-black";
+      src: url("ostrich-black.ttf");
     }
     @font-face {
       font-family: "ostrich-regular";
@@ -37,14 +41,15 @@
       height:250px;
       margin:auto;
       margin-top:5px;
-      margin-bottom:10px;
+      margin-bottom:5px;
       padding-top:10px;
+      position:relative;
     }
     .joinLogo {
       width: 40px;
       height: 40px;
       margin: 14px;
-      margin-top:0px;
+      margin-top:130px;
       border-radius:50px;
       background-color:black;
       color:white;
@@ -59,15 +64,102 @@
       text-align:center;
       width:100%;
       font-family:"ostrich-bold", sans;
+      position:absolute;
+      top:10px;
+      z-index:0;
     }
-
+    #startCountTwo {
+      font-size:150px;
+      text-align:center;
+      width:100%;
+      font-family:"ostrich-black", sans;
+      color:white;
+      position:absolute;
+      top:10px;
+      z-index:0;
+    }
+    #logo {
+      letter-spacing: 8px;
+      width:800px;
+      height:190px;
+      position:relative;
+      background-color:white; 
+      font-size:150px;
+      text-align:center;
+      padding-top:1px;
+      margin:0px;
+      margin-bottom:5px;
+    }
+    #logo_inner {
+      border: solid 5px black;
+      margin:5px;
+      padding-top:0px;
+      width:780px;
+      height:170px;
+      position:relative;
+    }
+    .o_black {
+      font-family:"ostrich-black", sans;
+    }
+    .o_bold {
+      font-family:"ostrich-bold", sans;
+    }
+    .pink {
+      color: #d82095;
+    }
+    .green {
+      color: #99df19;
+    }
+    .blue {
+      color: #0cc4ec;
+    }
+    .orange {
+      color: #fa611e;
+    }
+    .purple {
+      color: #710bf6;
+    }
+    .yellow {
+      color: #dcc20d;
+    }
+    #logo_back {
+      position:absolute;
+      width:100%;
+      text-align:center;
+    }
+    #logo_front {
+      position:absolute;
+      z-index:2;
+      width:100%;
+      text-align:center;
+    }
 	</style>
 </head>
 
 <body style="background-color:#000000;">
 	<div id="container" style="width:800; height:500; position:relative; margin:auto; ">
-    <img src="logo.png" style="padding-bottom:5px"/>
+    <div id="logo">
+      <div id="logo_inner">
+        <div id="logo_back">
+          <span class="pink o_black">F</span>
+          <span class="green o_black">L</span>
+          <span class="blue o_black">Y</span>
+          <span class="orange o_black">R</span>
+          <span class="purple o_black">O</span>
+          <span class="yellow o_black">K</span>
+        </div>
+        <div id="logo_front">
+          <span class="o_bold">F</span>
+          <span class="o_bold">L</span>
+          <span class="o_bold">Y</span>
+          <span class="o_bold">R</span>
+          <span class="o_bold">O</span>
+          <span class="o_bold">K</span>
+        </div>
+      </div>
+    </div>
     <div id="startMessage">
+      <div id="startCountTwo">press button</div>
       <div id="startCount">press button</div>
       <div id="startLogo1" class="joinLogo">z</div>
       <div id="startLogo2" class="joinLogo">c</div>

@@ -40,7 +40,7 @@ var rockTrailLength = 20;
 var rockTrailInterval = 2;
 var rockMinSize = 10;
 var maxRockSpeed = 0;
-var rocktrailWidth = 0.03;
+var rocktrailWidth = 0.06;
 var terminalYVel = 10;
 
 var rocks = [];
@@ -67,6 +67,7 @@ var manualControl = false;
 
 var startMessage;
 var startCountElement;
+var startCountElementTwo;
 
 function init() {
   var canvas = document.getElementById("canvas");
@@ -82,6 +83,7 @@ function init() {
 
   startMessage = document.getElementById("startMessage");
   startCountElement = document.getElementById("startCount");
+  startCountElementTwo = document.getElementById("startCountTwo");
 
 
   change_state(game_start);
@@ -221,6 +223,7 @@ function run_start(delta) {
   if (rocksIn >= 2) {
     timeLeftInStart -=delta;
     startCountElement.innerHTML = Math.ceil(timeLeftInStart/1000);
+    startCountElementTwo.innerHTML = Math.ceil(timeLeftInStart/1000);
   }
   if (doingRaceCountDown) {
     var startMessageHeight = startMessage.style.height;
@@ -338,7 +341,8 @@ function change_state(new_state) {
           break;
       }
       startCountElement.innerHTML = winnerText + " Won!";
-      startCountElement.style.color = rocks[0].colour;
+      startCountElementTwo.innerHTML = winnerText + " Won!";
+      startCountElementTwo.style.color = rocks[0].colour;
       timeInEnd = 3000;
       break;
   }
@@ -595,8 +599,8 @@ function draw() {
 
     }
 
-    context.strokeStyle = rock.colour;
-    context.lineWidth = rock.size*rockMinSize*rocktrailWidth*worldScale;
+    context.strokeStyle = "#000000";
+    context.lineWidth = rock.size*rockMinSize*rocktrailWidth*worldScale*3;
     context.beginPath();
     var j;
     var first = false;
@@ -608,13 +612,15 @@ function draw() {
           context.moveTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y)*worldScale);
           first = false;
         } else {
-          context.lineTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y - rock.size*0.5)*worldScale);
+          context.lineTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y)*worldScale);
         }
       } else {
         first = true;
       }
     }
     context.stroke();
+    context.strokeStyle = rock.colour;
+    context.lineWidth = rock.size*rockMinSize*rocktrailWidth*worldScale;
     context.beginPath();
     first = false;
     context.moveTo((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale);
@@ -625,7 +631,7 @@ function draw() {
           context.moveTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y)*worldScale);
           first = false;
         } else {
-          context.lineTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y + rock.size*0.5)*worldScale);
+          context.lineTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y)*worldScale);
         }
       } else {
         first = true;
