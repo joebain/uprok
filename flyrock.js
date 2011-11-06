@@ -45,6 +45,9 @@ var terminalYVel = 10;
 
 var rocks = [];
 var rockMap = {};
+var rocksByPlayerId = {};
+
+var gameId = -1;
 
 var keys = {};
 
@@ -110,6 +113,8 @@ function startingGrid() {
     rocks[i].actionDivId = "player" + (i+1) + "action";
     rocks[i].startLogoElement = document.getElementById("startLogo"+(i+1));
     rocks[i].originalNumber = i;
+    rocks[i].player_id = -1;
+    rocks[i].local = false;
     rockMap[i] = rocks[i];
   }
 
@@ -214,6 +219,7 @@ function run_start(delta) {
       if (!rock.in) {
         rocksIn++
         rock.in = true;
+        initRemote(rock);
 //        rock.startLogoElement.style.visibility = "visible";
         rock.startLogoElement.style.color = rock.colour;
       }
@@ -361,6 +367,7 @@ function loop() {
     case game_play:
       update(delta);
       draw();
+      synchronise();
       break;
     case game_end:
       run_end(delta);
@@ -538,6 +545,59 @@ function update(delta)
     }
   }
 
+}
+
+function initRemote(rock) {
+  rock.local = true;
+  if (gameId === -1) {
+    $.getJSON('http://127.0.0.1:1337/game', {}, function (game) {
+          rock.player_id = game.player_id;
+          gameId = game.game_id;
+          console.log("registered player " + JSON.stringify(game));
+        }).
+        error(function() {
+          console.log("error registering player");
+        });
+  } else {
+    $.getJSON('http://127.0.0.1:1337/game/'+gameId, {}, function (game) {
+          rock.player_id = game.player_id;
+          console.log("registered player " + JSON.stringify(game));
+        }).
+        error(function() {
+          console.log("error registering player");
+        });
+  }
+}
+
+function synchronise() {
+  if (ticker % 30 == 0) {
+    var moveData = {game_id: gameId, players:{}};
+    for (var i = 0 ; i < rocks.length ; i++) {
+      var rock = rocks[i];
+      if (rock.local) {
+        moveData.players[rock.player_id] = {position:{x: rock.x, y: rock.y}};
+      }
+    }
+
+    console.log("sending a move " + JSON.stringify(moveData));
+    $.ajax('http://127.0.0.1:1337/move', {
+        type: 'POST',
+        data: JSON.stringify(moveData),
+        contentType: 'text/json',
+        success: function(gameData) {
+          console.log("got move response " + gameData);
+          var game = JSON.parse(gameData);
+          for (var j = 0 ; j < game.players.length; j++) {
+            var player = games.players[j];
+            var rock = rocksByPlayerId[player.id];
+            if (!rock.local) {
+              rock.position = player.position;
+            }
+          }
+        },
+        error  : function() { console.log("uh oh an error synchronizing"); }
+      });
+  }
 }
 
 function removeRock(i) {
