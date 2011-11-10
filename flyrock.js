@@ -202,6 +202,18 @@ function keysdown(e) {
   keys[e.keyCode] = true;
 }
 
+function joinRock(i, local) {
+  if (!rock.in) {
+    rocksIn++;
+    rock.in = true;
+    rock.local = local;
+    if (local) {
+      initRemote(rock);
+    }
+    rock.startLogoElement.style.color = rock.colour;
+  }
+}
+
 var rocksIn = 0;
 var timeInStart = 0;
 var timeLeftInStart = 0;
@@ -216,13 +228,7 @@ function run_start(delta) {
   for (var i in rocks) {
     var rock = rocks[i];
     if (keys[rock.onKey]) {
-      if (!rock.in) {
-        rocksIn++
-        rock.in = true;
-        initRemote(rock);
-//        rock.startLogoElement.style.visibility = "visible";
-        rock.startLogoElement.style.color = rock.colour;
-      }
+      joinRock(i, true);
     }
   }
 
@@ -548,10 +554,9 @@ function update(delta)
 }
 
 function initRemote(rock) {
-  rock.local = true;
   if (gameId === -1) {
     $.getJSON('http://127.0.0.1:1337/game', {}, function (game) {
-          rock.player_id = game.player_id;
+          joinRock(game.player_id, true, rock);
           gameId = game.game_id;
           console.log("registered player " + JSON.stringify(game));
         }).
@@ -560,13 +565,25 @@ function initRemote(rock) {
         });
   } else {
     $.getJSON('http://127.0.0.1:1337/game/'+gameId, {}, function (game) {
-          rock.player_id = game.player_id;
+          joinRock(game.player_id, true, rock);
           console.log("registered player " + JSON.stringify(game));
         }).
         error(function() {
           console.log("error registering player");
         });
   }
+}
+
+function checkForRemotePlayers() {
+  $.getJSON('/players', {game_id:gameId}, function(players) {
+    for (var i = 0 ; i < players.length ; i++) {
+      if (players[i]) {
+        joinRock(players[i].player_id, false);
+      }
+    }
+  }).error(function() {
+    console.log("error getting players");
+  });
 }
 
 function synchronise() {

@@ -51,8 +51,15 @@ http.createServer(function (req, res) {
         res.end(JSON.stringify({game_id:lastGameIndex, player_id:player_id}));
       }
       
-    }
-    else {
+    } else if ( splitUrl[1] === 'players') {
+      var gameId = splitUrl[2];
+      var game = games[gameId];
+      if ( game != undefined ) {
+        console.log("returning players in existing game " + gameId);
+        res.writeHead(200, {'content-type': 'text/plain' , 'Access-Control-Allow-Origin' : '*'});
+        res.end(JSON.stringify(game.players));
+      }
+    } else {
       // try to serve a file
       var filePath = '.' + req.url;
       if (filePath == './') {
@@ -107,7 +114,7 @@ http.createServer(function (req, res) {
           res.end(JSON.stringify(games[move.game_id]));
         } else {
           res.writeHead(404, {'content-type': 'text/plain' });
-          res.end();
+          res.end("There was an erro, the game does not exist or you didnt supply a move or players");
         }
       }
     });
