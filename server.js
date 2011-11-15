@@ -98,7 +98,7 @@ http.createServer(function (req, res) {
             for (var i = 0 ; i < postData.players ; i++) {
               var newPlayerId = game.players.length;
               playerIds[playerIds.length] = newPlayerId;
-              game.players[newPlayerId] = {};
+              game.players[newPlayerId] = {x:0,y:0};
             }
             console.log("returning new player ids " + playerIds + ", for game " + lastGameIndex);
             res.writeHead(200, {'content-type': 'text/plain'});
@@ -106,6 +106,7 @@ http.createServer(function (req, res) {
             return;
           }
         }
+        // if we have a game id
         else {
           var game = games[gameId];
           if (game === undefined) {
@@ -157,18 +158,20 @@ http.createServer(function (req, res) {
             }
             // deal with the move
             else {
+              console.log("dealing with a move");
               var playersMoved = postData.players;
               var otherPlayers = game.players.slice(0);
               // update player positions on the server
               for (var playerIndex in playersMoved) {
+                playerIndex = parseInt(playerIndex);
                 game.players[playerIndex] = playersMoved[playerIndex];
                 otherPlayers[playerIndex] = null;
               }
               // get the players which did not have moves sent and return them
-              var playersToReturn = [];
+              var playersToReturn = {};
               for (var i = 0 ; i < otherPlayers.length ; i++) {
                 if (otherPlayers[i] !== null) {
-                  playersToReturn[playersToReturn.length] = otherPlayers[i];
+                  playersToReturn[i] = otherPlayers[i];
                 }
               }
               res.writeHead(200, {'content-type': 'text/plain'});

@@ -35,6 +35,7 @@ Server:
   ok
 
 during game play:
+curl -i -X POST -d '{"players":{"0":{"x":5, "y":4}}}' http://127.0.0.1:1337/game/0
 POST game/x {players:{1:{x:5,y:6}, 3:{x:2,y:4}}}
   {state:play, players:{2:{x:5,y:6}, 4:{x:2,y:4}}}
 
