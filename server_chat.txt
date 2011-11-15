@@ -1,0 +1,59 @@
+Client:
+  play a local game or a remote game
+
+Client:
+  i want to play, i have N players
+Server:
+  here is a game number and N player ids
+
+Client:
+  what is the game state
+Server:
+  waiting for players, there are 4 players
+
+Client:
+  what is the game state, there are 4 players
+Server:
+  countdown
+
+Client:
+  what is the game state
+Server:
+  playing, player positions are: x,y,z
+
+Client:
+  what is the game state
+Server:
+  finished, the winner was: d
+
+Client:
+  play again?
+
+Client:
+  my players are at positions: x,y,z
+Server:
+  ok
+
+during game play:
+POST game/x {players:{1:{x:5,y:6}, 3:{x:2,y:4}}}
+  {state:play, players:{2:{x:5,y:6}, 4:{x:2,y:4}}}
+
+before game play:
+curl -i -X POST -d '{"players":2}' http://127.0.0.1:1337/game
+POST game {players:2}
+  {state:wait, players:[2,3]}
+
+countdown:
+curl -i -X POST -d '' http://127.0.0.1:1337/game/0
+POST game/x {}
+  {state:countdown, players:4, time:8.7}
+
+waiting:
+curl -i -X POST -d '' http://127.0.0.1:1337/game/0
+POST game/x {}
+  {state:wait, players:4, time:2.4}
+
+finish:
+POST game/x {}
+  {state:finish, winner:3}
+

@@ -203,6 +203,7 @@ function keysdown(e) {
 }
 
 function joinRock(i, local) {
+  var rock = rocks[i];
   if (!rock.in) {
     rocksIn++;
     rock.in = true;
