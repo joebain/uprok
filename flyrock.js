@@ -72,6 +72,14 @@ var startMessage;
 var startCountElement;
 var startCountElementTwo;
 
+var gameChoiceDiv;
+var gameChoiceLocal;
+var gameChoiceRemote;
+var playerChoiceDiv;
+var playerChoice = {};
+
+var socket;
+
 function init() {
   var canvas = document.getElementById("canvas");
   //    canvas.style.height = screenSize.y*worldScale;
@@ -89,9 +97,76 @@ function init() {
   startCountElementTwo = document.getElementById("startCountTwo");
 
 
+  gameChoiceDiv = document.getElementById("gameChoice");
+  gameChoiceLocal = document.getElementById("localChoice");
+  gameChoiceLocal.onclick = chooseLocal;
+  gameChoiceRemote = document.getElementById("remoteChoice");
+  gameChoiceRemote.onclick = chooseRemote;
+
+  playerChoiceDiv = document.getElementById("playerNumberChoice");
+  for (var i = 1 ; i <= 6 ; i++) {
+    playerChoice[i] = document.getElementById(i+"player");
+    (function(i) {
+      playerChoice[i].onclick = function() {choosePlayers(i);}
+    })(i);
+  }
+
+  socket = io.connect('http://127.0.0.1:1337');
+  socket.on('updatePlayers', updatePlayers);
+  socket.on('confirmPlayers', confirmPlayers);
+  socket.on('gameStart', gameStart);
+  socket.on('gameFinished', gameFinished);
+  socket.on('news', handleNews);
+
   change_state(game_start);
 
   loop();
+}
+
+function gameStart(data) {
+}
+function gameFinished(data) {
+}
+function handleNews(data) {
+}
+
+function chooseRemote() {
+  console.log("remote game");
+  gameChoiceDiv.style.display = "none";
+  playerChoiceDiv.style.display = "";
+}
+function chooseLocal() {
+  console.log("local game");
+  gameChoiceDiv.style.display = "none";
+  for (var i = 0 ; i < 6 ; i++) {
+    setLocalPlayer(i);
+  }
+}
+
+function confirmPlayers(players) {
+  for (var i = 0 ; i < players.length ; i++) {
+    setLocalPlayer(players[i]);
+  }
+}
+function choosePlayers(n) {
+  console.log("choose players " + n);
+  playerChoiceDiv.style.display = "none";
+  socket.emit('joinPlayers', {players:n});
+}
+
+function setLocalPlayer(i) {
+  rocks[i].local = true;
+  rocks[i].startLogoElement.style.color = "#ffffff";
+}
+
+function updatePlayers(players) {
+  for (var player_i in players) {
+    var player = players[player_i];
+    var rock = rocks[player_i];
+    if (!rock.local && !rock.in) {
+      joinRock(player_i, false);
+    }
+  }
 }
 
 function startingGrid() {
@@ -150,7 +225,7 @@ function startingGrid() {
     rock.in = false;
     rock.on = false;
     rock.weight = 1;
-    rock.startLogoElement.style.color = "#ffffff";
+    rock.startLogoElement.style.color = "#000000";
 //    rock.startLogoElement.style.visibility = "hidden";
   }
   rocksIn = 0;
@@ -192,6 +267,10 @@ function startingGrid() {
   camera.x = 0;
   desiredCamera.x = 0;
   worldScale = 2;
+
+  //show/hide options
+  gameChoiceDiv.style.display = "";
+  playerChoiceDiv.style.display = "none";
 }
 
 function keysup(e) {
@@ -228,7 +307,7 @@ function run_start(delta) {
 
   for (var i in rocks) {
     var rock = rocks[i];
-    if (keys[rock.onKey]) {
+    if (keys[rock.onKey] && rock.local) {
       joinRock(i, true);
     }
   }
@@ -240,9 +319,6 @@ function run_start(delta) {
   }
   if (doingRaceCountDown) {
     var startMessageHeight = startMessage.style.height;
-//    if (startMessageHeight === "") {
-//      startMessage.style.height = 250;
-//    }
     startMessageHeight = parseInt(startMessageHeight);
     if (startMessageHeight <= 30) {
       startMessage.style.display = "none";

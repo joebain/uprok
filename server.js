@@ -2,11 +2,12 @@ var http = require('http');
 var url = require('url');
 var path = require('path');
 var fs = require('fs');
+var socket_io = require('socket.io');
 
 var games = [];
 var lastGameIndex = 0;
 
-http.createServer(function (req, res) {
+var server = http.createServer(function (req, res) {
   console.log("got a request " + req.url + ", " + req.method);
   var parsedUrl = url.parse(req.url);
   var splitUrl = parsedUrl.pathname.split("/");
@@ -68,38 +69,6 @@ http.createServer(function (req, res) {
             res.end("There was an error, if you want to start a game you must suplpy the number of players.");
             return;
           } else {
-            // get a game id and player ids for n players
-            var placesWanted = postData.players;
-            
-            var currentGameIndex = lastGameIndex;
-            // if the current game is empty / uninitialised
-            if ( games[currentGameIndex] === undefined ) {
-              games[currentGameIndex] = {id:lastGameIndex, players:[]};
-              games[currentGameIndex].timeCreated = new Date();
-              games[currentGameIndex].lastUpdated = new Date();
-              games[currentGameIndex].time = 0;
-              games[currentGameIndex].state = "waiting";
-              console.log("creating a game " + JSON.stringify(games[currentGameIndex]));
-            }
-            // if the current game is too full
-            else {
-              while ( games[currentGameIndex].state !== "waiting" || games[currentGameIndex].players.length >= 6-placesWanted ) {
-                currentGameIndex++;
-                games[currentGameIndex] = {id:currentGameIndex, players:[]};
-
-                // also increment lastGameIndex if those games are full
-                if ( games[lastGameIndex].players.length >= 6  || games[lastGameIndex].state !== "waiting") {
-                  lastGameIndex++;
-                }
-              }
-            }
-            var game = games[currentGameIndex];
-            var playerIds = [];
-            for (var i = 0 ; i < postData.players ; i++) {
-              var newPlayerId = game.players.length;
-              playerIds[playerIds.length] = newPlayerId;
-              game.players[newPlayerId] = {x:0,y:0};
-            }
             console.log("returning new player ids " + playerIds + ", for game " + lastGameIndex);
             res.writeHead(200, {'content-type': 'text/plain'});
             res.end(JSON.stringify({game_id:currentGameIndex, players:playerIds}));
@@ -187,5 +156,63 @@ http.createServer(function (req, res) {
       res.end("There was an error.");
     });
   }
-}).listen(1337, "127.0.0.1");
+})
+
+server.listen(1337, "127.0.0.1");
+
+var io = socket_io.listen(server);
+io.sockets.on('connection', function (socket) {
+  socket.on('joinPlayers', function (data) {
+    var client = makeClient(socket);
+    var gameData = joinPlayers(client, data.players);
+    socket.emit('confirmPlayers', gameData.playerIds);
+    for (var client_i in gameData.game.clients) {
+      var client = gameData.game.clients[client_i];
+      client.socket.emit('updatePlayers', gameData.game.players);
+    }
+  });
+});
+
+function makeClient(socket) {
+  return {socket:socket};
+}
+
+// get a game id and player ids for n players
+function joinPlayers(client, placesWanted) {
+
+  var currentGameIndex = lastGameIndex;
+  // if the current game is empty / uninitialised
+  if ( games[currentGameIndex] === undefined ) {
+    games[currentGameIndex] = {id:lastGameIndex, players:[]};
+    games[currentGameIndex].timeCreated = new Date();
+    games[currentGameIndex].lastUpdated = new Date();
+    games[currentGameIndex].time = 0;
+    games[currentGameIndex].state = "waiting";
+    games[currentGameIndex].clients = [];
+    console.log("creating a game " + JSON.stringify(games[currentGameIndex]));
+  }
+  // if the current game is too full
+  else {
+    while ( games[currentGameIndex].state !== "waiting" || games[currentGameIndex].players.length >= 6-placesWanted ) {
+      currentGameIndex++;
+      games[currentGameIndex] = {id:currentGameIndex, players:[]};
+
+      // also increment lastGameIndex if those games are full
+      if ( games[lastGameIndex].players.length >= 6  || games[lastGameIndex].state !== "waiting") {
+        lastGameIndex++;
+      }
+    }
+  }
+  var game = games[currentGameIndex];
+  game.clients.push(client);
+  var playerIds = [];
+  for (var i = 0 ; i < placesWanted ; i++) {
+    var newPlayerId = game.players.length;
+    playerIds[playerIds.length] = newPlayerId;
+    game.players[newPlayerId] = {x:0,y:0};
+  }
+
+  return  {playerIds:playerIds, game:game};
+}
+
 console.log('Server running at http://127.0.0.1:1337/');

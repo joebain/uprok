@@ -1,6 +1,7 @@
 <head>
 	<title>FLYROK</title>
 	<script type="application/x-javascript" src="jquery-1.7.min.js"></script>
+	<script type="application/x-javascript" src="socket.io/socket.io.js"></script>
 	<script type="application/x-javascript" src="flyrock.js"></script>
   <style>
     @font-face {
@@ -80,7 +81,7 @@
       z-index:0;
     }
     #logo {
-      letter-spacing: 8px;
+    /*  letter-spacing: 8px;*/
       width:800px;
       height:190px;
       position:relative;
@@ -125,6 +126,7 @@
     }
     #logo_back {
       position:absolute;
+      z-index:1;
       width:100%;
       text-align:center;
     }
@@ -134,6 +136,28 @@
       width:100%;
       text-align:center;
     }
+    .logo_letter {
+      margin:8px;
+      display:inline-block;
+      position:absolute;
+      top:20px;
+    }
+    .choiceButton {
+      font-family:"ostrich-black", sans;
+      color:black;
+      font-size:52px;
+      display:inline-block;
+      cursor:pointer;
+      margin:40px;
+      margin-top:160px;
+      letter-spacing:4px;
+    }
+    .choiceButton:hover {
+      font-family:"ostrich-bold", sans;
+    }
+    .choices {
+      text-align:center;
+    }
 	</style>
 </head>
 
@@ -141,39 +165,54 @@
 	<div id="container" style="width:800; height:500; position:relative; margin:auto; ">
     <div id="logo">
       <div id="logo_inner">
+<!--        <div style="font-family:ostrich-black; letter-spacing:40px; position:absolute; left:20px; top:60px" id="logo_front">-->
+<!--          FLYROK-->
+<!--        </div>-->
         <div id="logo_back">
-          <span class="pink o_black">F</span>
-          <span class="green o_black">L</span>
-          <span class="blue o_black">Y</span>
-          <span class="orange o_black">R</span>
-          <span class="purple o_black">O</span>
-          <span class="yellow o_black">K</span>
+          <div style="left:95px" class="logo_letter pink o_black">F</div>
+          <div style="left:190px" class="logo_letter green o_black">L</div>
+          <div style="left:284px" class="logo_letter blue o_black">Y</div>
+          <div style="left:400px" class="logo_letter orange o_black">R</div>
+          <div style="left:502px" class="logo_letter purple o_black">O</div>
+          <div style="left:602px" class="logo_letter yellow o_black">K</div>
         </div>
         <div id="logo_front">
-          <span class="o_bold">F</span>
-          <span class="o_bold">L</span>
-          <span class="o_bold">Y</span>
-          <span class="o_bold">R</span>
-          <span class="o_bold">O</span>
-          <span class="o_bold">K</span>
+          <div style="left:95px" class="logo_letter o_bold">F</div>
+          <div style="left:190px" class="logo_letter o_bold">L</div>
+          <div style="left:286px" class="logo_letter o_bold">Y</div>
+          <div style="left:400px" class="logo_letter o_bold">R</div>
+          <div style="left:502px" class="logo_letter o_bold">O</div>
+          <div style="left:602px" class="logo_letter o_bold">K</div>
         </div>
       </div>
     </div>
     <div id="startMessage">
-      <div id="startCountTwo">press button</div>
-      <div id="startCount">press button</div>
-      <div id="startLogo1" class="joinLogo">x</div>
-      <div id="startLogo2" class="joinLogo">x</div>
-      <div id="startLogo3" class="joinLogo">x</div>
-      <div id="startLogo4" class="joinLogo">x</div>
-      <div id="startLogo5" class="joinLogo">x</div>
-      <div id="startLogo6" class="joinLogo">x</div>
-<!--      <div id="startLogo1" class="joinLogo">z</div>-->
-<!--      <div id="startLogo2" class="joinLogo">c</div>-->
+      <div id="startCountTwo">Start game</div>
+      <div id="startCount">Start game</div>
+      <div id="gameChoice" class="choices">
+        <div id="localChoice" class="choiceButton">Local game</div>
+        <div id="remoteChoice" class="choiceButton">Online game</div>
+      </div>
+      <div id="playerNumberChoice" class="choices" style="display:none">
+        <div id="1player" class="choiceButton">1</div>
+        <div id="2player" class="choiceButton">2</div>
+        <div id="3player" class="choiceButton">3</div>
+        <div id="4player" class="choiceButton">4</div>
+        <div id="5player" class="choiceButton">5</div>
+        <div id="6player" class="choiceButton">6</div>
+      </div>
+<!--      <div id="startLogo1" class="joinLogo">x</div>-->
+<!--      <div id="startLogo2" class="joinLogo">x</div>-->
 <!--      <div id="startLogo3" class="joinLogo">x</div>-->
-<!--      <div id="startLogo4" class="joinLogo">n</div>-->
-<!--      <div id="startLogo5" class="joinLogo">b</div>-->
-<!--      <div id="startLogo6" class="joinLogo">m</div>-->
+<!--      <div id="startLogo4" class="joinLogo">x</div>-->
+<!--      <div id="startLogo5" class="joinLogo">x</div>-->
+<!--      <div id="startLogo6" class="joinLogo">x</div>-->
+      <div id="startLogo1" class="joinLogo">z</div>
+      <div id="startLogo2" class="joinLogo">c</div>
+      <div id="startLogo3" class="joinLogo">x</div>
+      <div id="startLogo4" class="joinLogo">n</div>
+      <div id="startLogo5" class="joinLogo">b</div>
+      <div id="startLogo6" class="joinLogo">m</div>
     </div>
 		<canvas id="canvas" width="800" height="400" style="position:relative;"></canvas>
 		<div id="player1speed" class="speedDiv">0.00 mph</div>

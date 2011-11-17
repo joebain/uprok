@@ -1,6 +1,6 @@
 var assert = require("assert");
 module.exports = {
-  'ok': function() {
+  'test join': function() {
     assert.ok(true, "This is ok.");
   },
 
