@@ -48,115 +48,7 @@ var server = http.createServer(function (req, res) {
       }
     });
   }
-  // all the action happens from post requests
-  else if ( req.method === 'POST' ) {
-    var data = '';
-    req.on('data', function(chunk) { data += chunk; });
-    req.on('end', function() {
-      if (splitUrl[1] === 'game') {
-        console.log("got game: " + data);
-        var postData;
-        var gameId = splitUrl[2];
-        try {
-          postData = JSON.parse(data);
-        } catch (e) {
-          console.log("error parsing move");
-        }
-        // getting a game id
-        if (gameId === undefined) {
-          if (postData === undefined || postData.players === undefined) {
-            res.writeHead(404, {'content-type': 'text/plain' });
-            res.end("There was an error, if you want to start a game you must suplpy the number of players.");
-            return;
-          } else {
-            console.log("returning new player ids " + playerIds + ", for game " + lastGameIndex);
-            res.writeHead(200, {'content-type': 'text/plain'});
-            res.end(JSON.stringify({game_id:currentGameIndex, players:playerIds}));
-            return;
-          }
-        }
-        // if we have a game id
-        else {
-          var game = games[gameId];
-          if (game === undefined) {
-            res.writeHead(404, {'content-type': 'text/plain' });
-            res.end("There was an error. The game id you specified does not exist/");
-            return;
-          }
-          var now = new Date();
-          console.log("game time is " + game.time);
-          game.time = game.time + (now - game.lastUpdated);
-          console.log("lastup " + game.lastUpdated);
-          console.log("diff " + (now-game.lastUpdated));
-          console.log("game time is " + game.time);
-          game.lastUpdated = now;
-          // update state
-          if (game.state === "waiting" && (game.time > 10000 || game.players.length >= 6)) {
-            game.state = "countdown";
-            game.time = 10000;
-          }
-          else if (game.state === "countdown" && game.time > 13000) {
-            game.state = "playing";
-          }
-          // checking state
-          if (postData === undefined) {
-            console.log("returning game state " + JSON.stringify(game));
-            if ( game.state === "countdown" || game.state === "waiting" ) {
-              res.writeHead(200, {'content-type': 'text/plain'});
-              res.end(JSON.stringify({state: game.state, players:game.players.length, time:game.time}));
-              return;
-            } else if ( game.state === "finished" ) {
-              res.writeHead(200, {'content-type': 'text/plain'});
-              res.end(JSON.stringify({state: game.state, winner: game.winner}));
-              return;
-            }
-          }
-          // a move
-          else {
-            // if there is no move
-            if (!postData.players) {
-              res.writeHead(404, {'content-type': 'text/plain' });
-              res.end("There was an error. You did not specify any player moves, but the game is in play.");
-              return;
-            }
-            // if the game is not in progress
-            else if (game.state !== "playing") {
-              res.writeHead(404, {'content-type': 'text/plain' });
-              res.end("There was an error. You cannot send a move, the game has not started.");
-              return;
-            }
-            // deal with the move
-            else {
-              console.log("dealing with a move");
-              var playersMoved = postData.players;
-              var otherPlayers = game.players.slice(0);
-              // update player positions on the server
-              for (var playerIndex in playersMoved) {
-                playerIndex = parseInt(playerIndex);
-                game.players[playerIndex] = playersMoved[playerIndex];
-                otherPlayers[playerIndex] = null;
-              }
-              // get the players which did not have moves sent and return them
-              var playersToReturn = {};
-              for (var i = 0 ; i < otherPlayers.length ; i++) {
-                if (otherPlayers[i] !== null) {
-                  playersToReturn[i] = otherPlayers[i];
-                }
-              }
-              res.writeHead(200, {'content-type': 'text/plain'});
-              res.end(JSON.stringify({state: game.state, players: playersToReturn}));
-              return;
-            }
-          }
-        }
-      }
-      // fallthrough
-      console.log("no good response");
-      res.writeHead(404, {'content-type': 'text/plain' });
-      res.end("There was an error.");
-    });
-  }
-})
+});
 
 server.listen(1337, "127.0.0.1");
 
@@ -177,31 +69,35 @@ function makeClient(socket) {
   return {socket:socket};
 }
 
+function initGame(gameIndex) {
+  if ( games[gameIndex] === undefined ) {
+    games[gameIndex] = {id:gameIndex, players:[]};
+    games[gameIndex].timeCreated = new Date();
+    games[gameIndex].lastUpdated = new Date();
+    games[gameIndex].time = 0;
+    games[gameIndex].state = "waiting";
+    games[gameIndex].clients = [];
+    console.log("creating a game " + JSON.stringify(games[gameIndex]));
+  }
+}
+
 // get a game id and player ids for n players
 function joinPlayers(client, placesWanted) {
 
   var currentGameIndex = lastGameIndex;
-  // if the current game is empty / uninitialised
-  if ( games[currentGameIndex] === undefined ) {
-    games[currentGameIndex] = {id:lastGameIndex, players:[]};
-    games[currentGameIndex].timeCreated = new Date();
-    games[currentGameIndex].lastUpdated = new Date();
-    games[currentGameIndex].time = 0;
-    games[currentGameIndex].state = "waiting";
-    games[currentGameIndex].clients = [];
-    console.log("creating a game " + JSON.stringify(games[currentGameIndex]));
-  }
-  // if the current game is too full
-  else {
-    while ( games[currentGameIndex].state !== "waiting" || games[currentGameIndex].players.length >= 6-placesWanted ) {
-      currentGameIndex++;
-      games[currentGameIndex] = {id:currentGameIndex, players:[]};
 
-      // also increment lastGameIndex if those games are full
-      if ( games[lastGameIndex].players.length >= 6  || games[lastGameIndex].state !== "waiting") {
-        lastGameIndex++;
-      }
-    }
+  // check games to find one that will fit us in
+  while ( games[currentGameIndex] !== undefined && (games[currentGameIndex].state !== "waiting" || games[currentGameIndex].players.length >= 6-placesWanted) ) {
+	  currentGameIndex++;
+
+	  // also increment lastGameIndex if those games are full
+	  if ( games[lastGameIndex].players.length >= 6  || games[lastGameIndex].state !== "waiting") {
+		  lastGameIndex++;
+	  }
+  }
+  console.log("found game " + currentGameIndex);
+  if (games[currentGameIndex] === undefined) {
+	  initGame(currentGameIndex);
   }
   var game = games[currentGameIndex];
   game.clients.push(client);
