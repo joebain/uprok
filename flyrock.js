@@ -44,6 +44,7 @@ var rocktrailWidth = 0.06;
 var terminalYVel = 10;
 
 var rocks = [];
+var localRocks = [];
 var rockMap = {};
 var rocksByPlayerId = {};
 
@@ -139,14 +140,13 @@ function chooseLocal() {
   console.log("local game");
   gameChoiceDiv.style.display = "none";
   for (var i = 0 ; i < 6 ; i++) {
-    setLocalPlayer(i);
+	  if (!rocks[i].local) {
+		  setLocalPlayer(i);
+	  }
   }
 }
 
 function confirmPlayers(players) {
-  for (var i = 0 ; i < players.length ; i++) {
-    setLocalPlayer(players[i]);
-  }
 }
 function choosePlayers(n) {
   console.log("choose players " + n);
@@ -154,16 +154,11 @@ function choosePlayers(n) {
   socket.emit('joinPlayers', {players:n});
 }
 
-function setLocalPlayer(i) {
-  rocks[i].local = true;
-  rocks[i].startLogoElement.style.color = "#ffffff";
-}
-
 function updatePlayers(players) {
   for (var player_i in players) {
     var player = players[player_i];
     var rock = rocks[player_i];
-    if (!rock.local && !rock.in) {
+    if (player.in && !rock.local && !rock.in) {
       joinRock(player_i, false);
     }
   }
@@ -446,6 +441,7 @@ function loop() {
   switch (mode) {
     case game_start:
       run_start(delta);
+      synchronise();
       break;
     case game_play:
       update(delta);
@@ -665,32 +661,12 @@ function checkForRemotePlayers() {
 
 function synchronise() {
   if (ticker % 30 == 0) {
-    var moveData = {game_id: gameId, players:{}};
-    for (var i = 0 ; i < rocks.length ; i++) {
-      var rock = rocks[i];
-      if (rock.local) {
-        moveData.players[rock.player_id] = {position:{x: rock.x, y: rock.y}};
-      }
-    }
-
-    console.log("sending a move " + JSON.stringify(moveData));
-    $.ajax('http://127.0.0.1:1337/move', {
-        type: 'POST',
-        data: JSON.stringify(moveData),
-        contentType: 'text/json',
-        success: function(gameData) {
-          console.log("got move response " + gameData);
-          var game = JSON.parse(gameData);
-          for (var j = 0 ; j < game.players.length; j++) {
-            var player = games.players[j];
-            var rock = rocksByPlayerId[player.id];
-            if (!rock.local) {
-              rock.position = player.position;
-            }
-          }
-        },
-        error  : function() { console.log("uh oh an error synchronizing"); }
-      });
+	  for (var i in rocks) {
+		  if (rock.local) {
+			  localRocks.push({i: i, x:rock.x, y:rock.y, in:rock.in, on:rock.on});
+		  }
+	  }
+	  socket.emit("updatePlayers", localRocks);
   }
 }
 

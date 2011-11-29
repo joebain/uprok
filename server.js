@@ -54,14 +54,34 @@ server.listen(1337, "127.0.0.1");
 
 var io = socket_io.listen(server);
 io.sockets.on('connection', function (socket) {
+	var thisGameData;
   socket.on('joinPlayers', function (data) {
     var client = makeClient(socket);
     var gameData = joinPlayers(client, data.players);
+	if (!thisGameData) {
+		thisGameData = gameData;
+	}
     socket.emit('confirmPlayers', gameData.playerIds);
     for (var client_i in gameData.game.clients) {
       var client = gameData.game.clients[client_i];
       client.socket.emit('updatePlayers', gameData.game.players);
     }
+  });
+
+  socket.on('updatePlayers', function(data) {
+	  if (!thisGameData) return;
+	  for (var i in data) {
+		  var playerData = data[i];
+		  var player = thisGameData.game.players[playerData.i];
+		  player.x = playerData.x;
+		  player.y = playerData.y;
+		  player.on = playerData.on;
+		  player.in = playerData.in;
+	  }
+	  for (var client_i in thisGameData.game.clients) {
+		  var client = thisGameData.game.clients[client_i];
+		  client.socket.emit('updatePlayers', thisGameData.game.players);
+	  }
   });
 });
 
