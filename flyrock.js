@@ -21,8 +21,8 @@ var camera = {x:0, y:0};
 var desiredCamera = {x:0, y:0};
 var pointSpacing = 10;
 var pointHeight = 30;
-var screenSize = {x:1600, y:800};
-var canvasSize = {x:800, y:400};
+var screenSize = {x:2560, y:1600};
+var canvasSize = {x:1280, y:800};
 var groundPoints = 300000;
 var levelSize = {x:groundPoints*pointSpacing, y:screenSize.y * 1000};
 
@@ -45,6 +45,7 @@ var rocktrailWidth = 0.06;
 var terminalYVel = 10;
 
 var rocks = [];
+var numberOfRocks = 5;
 var localRocks = [];
 var rockMap = {};
 var rocksByPlayerId = {};
@@ -111,7 +112,7 @@ function init() {
 	gameChoiceRemote.onclick = chooseRemote;
 
 	playerChoiceDiv = document.getElementById("playerNumberChoice");
-	for (var i = 1 ; i <= 6 ; i++) {
+	for (var i = 1 ; i <= numberOfRocks ; i++) {
 		playerChoice[i] = document.getElementById(i+"player");
 		(function(i) {
 			playerChoice[i].onclick = function() {choosePlayers(i);}
@@ -150,7 +151,7 @@ function chooseLocal() {
 	console.log("local game");
 	gameChoiceDiv.style.display = "none";
 	gameIsLocal = true;
-	for (var i = 0 ; i < 6 ; i++) {
+	for (var i = 0 ; i < numberOfRocks ; i++) {
 		if (!rocks[i].local) {
 			setLocalPlayer(i);
 		}
@@ -237,7 +238,7 @@ function loadSounds() {
 	audioContext = new webkitAudioContext();
 
 	drums = [];
-	drums.push({url:"sounds/drums1.ogg"});
+	drums.push({url:"sounds/drums_heavy.ogg"});
 	//drums.push({url:"sounds/behind_the_wall_of_sleep.ogg"});
 
 
@@ -246,14 +247,19 @@ function loadSounds() {
 		getSound(drum);
 	}
 	
-	rocks[0].sound = {url:"sounds/rock0.ogg"};
-	getSound(rocks[0].sound);
-	rocks[1].sound = {url:"sounds/rock1.ogg"};
-	getSound(rocks[1].sound);
+	rocks[0].sound = {url:"sounds/track1_heavy.ogg"};
+	rocks[1].sound = {url:"sounds/track2_heavy.ogg"};
+	rocks[2].sound = {url:"sounds/track3_heavy.ogg"};
+	rocks[3].sound = {url:"sounds/track4_heavy.ogg"};
+	rocks[4].sound = {url:"sounds/track5_heavy.ogg"};
+	for (var i in rocks) {
+		var rock = rocks[i];
+		getSound(rock.sound);
+	}
 }
 
 function startingGrid() {
-	for (var i = 0 ; i < 6 ; i++) {
+	for (var i = 0 ; i < numberOfRocks ; i++) {
 		rocks[i] = {};
 		rocks[i].x = pointSpacing * 2;
 		rocks[i].y = 300;
@@ -281,14 +287,14 @@ function startingGrid() {
 	rocks[2].onKey = 88;//x
 	rocks[3].onKey = 78;//n
 	rocks[4].onKey = 66;//b
-	rocks[5].onKey = 77;//m
+//	rocks[5].onKey = 77;//m
 
 	rocks[0].colour = "#d82095";
 	rocks[1].colour = "#99df19";
 	rocks[2].colour = "#0cc4ec";
 	rocks[3].colour = "#fa611e";
 	rocks[4].colour = "#710bf6";
-	rocks[5].colour = "#dcc20d";
+//	rocks[5].colour = "#dcc20d";
 
 	for (var i in rocks) {
 		rocks[i].elementSpeed = document.getElementById(rocks[i].speedDivId);
@@ -387,13 +393,17 @@ function controlSound() {
 	if (keys[80]) { // p
 		playSound(drums[0]);
 		for (var i in rocks) {
-			playSound(rocks[i].sound);
+			if (rocks[i].sound) {
+				playSound(rocks[i].sound);
+			}
 		}
 	}
 	if (keys[79]) { //o
 		stopSound(drums[0]);
 		for (var i in rocks) {
-			stopSound(rocks[i].sound);
+			if (rocks[i].sound) {
+				stopSound(rocks[i].sound);
+			}
 		}
 	}
 	if (keys[73]) { //i
@@ -462,7 +472,7 @@ function run_start(delta) {
 			}
 		}
 	}
-	else if (timeLeftInStart <= 0 || rocksIn == 6) {
+	else if (timeLeftInStart <= 0 || rocksIn == numberOfRocks) {
 		console.log("starting game");
 		//    startMessage.style.display = "none";
 		camera.y = levelSize.y - 900;
@@ -635,7 +645,7 @@ function update(delta)
 	for (i in rocks) {
 		rock = rocks[i];
 
-		rock.on = false;
+//		rock.on = false;
 		if (keys[rock.onKey]) {//z
 			rock.on = true;
 			//      rock.weight = 1.5;
@@ -647,6 +657,10 @@ function update(delta)
 
 		restrictToLevel(rock);
 		rock.underGround = isBelowGround(rock);
+		//if (Math.random() > 0.99999999999) {
+		if (ticker % 10 == 0) {
+			rock.on = rock.underGround;
+		}
 
 		rock.force.y = (rock.velocity.y/rock.weight)/delta;
 		rock.force.x = (rock.velocity.x/rock.weight)/delta;
@@ -707,11 +721,12 @@ function update(delta)
 		//sounds
 		if (rock.sound && rock.sound.playing) {
 			//var mouseXVal = (mousePos.x/window.innerWidth);
-			var mouseXVal = rock.velocity.x / rock.maxVelocity;
-			mouseXVal /= 2;
-			mouseXVal += 0.5;
-			rock.sound.filterNode.frequency.value = Math.pow(2, mouseXVal*10);
-			rock.sound.filterNode.Q.value = rock.underGround ? 20 : -20;
+			//var freq = rock.velocity.x / rock.maxVelocity;
+			var freq = rock.velocity.y / 100 + 0.5;
+			freq /= 2;
+			freq += 0.5;
+			rock.sound.filterNode.frequency.value = Math.pow(2, freq*10);
+			//rock.sound.filterNode.Q.value = rock.underGround ? 20 : -20;
 
 			if (rock.on) {
 				unMuteSound(rock.sound);
