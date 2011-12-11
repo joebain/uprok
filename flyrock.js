@@ -181,7 +181,7 @@ function updatePlayers(players) {
 	}
 }
 
-function getSound(soundObj) {
+function getSound(soundObj, success) {
 	if (soundObj.isLoaded) return;
 	var request = new XMLHttpRequest();
 	request.open("GET", soundObj.url, true);
@@ -189,6 +189,7 @@ function getSound(soundObj) {
 	request.onload = function() {
 		soundObj.buffer = audioContext.createBuffer(request.response, false);
 		soundObj.isLoaded = true;
+		success();
 	};
 	request.send();
 }
@@ -234,8 +235,20 @@ function unMuteSound(soundObj) {
 function filterSound(soundObj) {
 }
 
+function startAllSounds() {
+	for (var i in rocks) {
+		playSound(rocks[i].sound);
+		muteSound(rocks[i].sound);
+		playSound(rocks[i].sparseSound);
+		muteSound(rocks[i].sparseSound);
+	}
+	playSound(drums[0]);
+}
+
 function loadSounds() {
 	audioContext = new webkitAudioContext();
+
+	var gotten = 0;
 
 	drums = [];
 	drums.push({url:"sounds/drums_heavy.ogg"});
@@ -244,7 +257,7 @@ function loadSounds() {
 
 	for (var i in drums) {
 		var drum = drums[i];
-		getSound(drum);
+		getSound(drum, function(){gotten++; if (gotten == 11) startAllSounds();});
 	}
 	
 	rocks[0].sound = {url:"sounds/track1_heavy.ogg"};
@@ -252,9 +265,15 @@ function loadSounds() {
 	rocks[2].sound = {url:"sounds/track3_heavy.ogg"};
 	rocks[3].sound = {url:"sounds/track4_heavy.ogg"};
 	rocks[4].sound = {url:"sounds/track5_heavy.ogg"};
+	rocks[0].sparseSound = {url:"sounds/track1_sparse.ogg"};
+	rocks[1].sparseSound = {url:"sounds/track2_sparse.ogg"};
+	rocks[2].sparseSound = {url:"sounds/track3_sparse.ogg"};
+	rocks[3].sparseSound = {url:"sounds/track4_sparse.ogg"};
+	rocks[4].sparseSound = {url:"sounds/track5_sparse.ogg"};
 	for (var i in rocks) {
 		var rock = rocks[i];
-		getSound(rock.sound);
+		getSound(rock.sound, function(){gotten++; if (gotten == 11) startAllSounds();});
+		getSound(rock.sparseSound, function(){gotten++; if (gotten == 11) startAllSounds();});
 	}
 }
 
@@ -395,6 +414,7 @@ function controlSound() {
 		for (var i in rocks) {
 			if (rocks[i].sound) {
 				playSound(rocks[i].sound);
+				playSound(rocks[i].sparseSound);
 			}
 		}
 	}
@@ -403,6 +423,7 @@ function controlSound() {
 		for (var i in rocks) {
 			if (rocks[i].sound) {
 				stopSound(rocks[i].sound);
+				stopSound(rocks[i].sparseSound);
 			}
 		}
 	}
@@ -412,13 +433,13 @@ function controlSound() {
 	if (keys[85]) { //u
 		unMuteSound(drums[0]);
 	}
-	if (drums[0] && drums[0].playing) {
-		var mouseXVal = (mousePos.x/window.innerWidth);
-		mouseXVal /= 2;
-		mouseXVal += 0.5;
-		drums[0].filterNode.frequency.value = Math.pow(2, mouseXVal*10);
-		drums[0].filterNode.Q.value = ((mousePos.y/window.innerHeight)-0.5) * 40;
-	}
+//	if (drums[0] && drums[0].playing) {
+//		var mouseXVal = (mousePos.x/window.innerWidth);
+//		mouseXVal /= 2;
+//		mouseXVal += 0.5;
+//		drums[0].filterNode.frequency.value = Math.pow(2, mouseXVal*10);
+//		drums[0].filterNode.Q.value = ((mousePos.y/window.innerHeight)-0.5) * 40;
+//	}
 }
 
 var rocksIn = 0;
@@ -438,6 +459,9 @@ function run_start(delta) {
 		var rock = rocks[i];
 		if (keys[rock.onKey] && rock.local) {
 			joinRock(i, true);
+			if (rock.sound && rock.sparseSound) {
+				unMuteSound(rock.sparseSound);
+			}
 		}
 	}
 
@@ -465,6 +489,7 @@ function run_start(delta) {
 				rocks[i].on = true;
 			}
 		} else if (raceCountDown <= 1000 && !flashed1) {
+			playSound(drums[0]);
 			flash = 1;
 			flashed1 = true;
 			for (var i in rocks) {
@@ -645,7 +670,9 @@ function update(delta)
 	for (i in rocks) {
 		rock = rocks[i];
 
-//		rock.on = false;
+		if (rock.originalNumber == 0) {
+			rock.on = false;
+		}
 		if (keys[rock.onKey]) {//z
 			rock.on = true;
 			//      rock.weight = 1.5;
@@ -658,8 +685,10 @@ function update(delta)
 		restrictToLevel(rock);
 		rock.underGround = isBelowGround(rock);
 		//if (Math.random() > 0.99999999999) {
-		if (ticker % 10 == 0) {
-			rock.on = rock.underGround;
+		if (rock.originalNumber != 0) {
+			if (ticker % 10 == 0) {
+				rock.on = rock.underGround;
+			}
 		}
 
 		rock.force.y = (rock.velocity.y/rock.weight)/delta;
@@ -722,16 +751,18 @@ function update(delta)
 		if (rock.sound && rock.sound.playing) {
 			//var mouseXVal = (mousePos.x/window.innerWidth);
 			//var freq = rock.velocity.x / rock.maxVelocity;
-			var freq = rock.velocity.y / 100 + 0.5;
+			var freq = rock.velocity.y / 50 + 0.5;
 			freq /= 2;
 			freq += 0.5;
 			rock.sound.filterNode.frequency.value = Math.pow(2, freq*10);
 			//rock.sound.filterNode.Q.value = rock.underGround ? 20 : -20;
 
-			if (rock.on) {
+			if (rock.on && rock.in) {
 				unMuteSound(rock.sound);
+				muteSound(rock.sparseSound);
 			} else {
 				muteSound(rock.sound);
+				unMuteSound(rock.sparseSound);
 			}
 		}
 
@@ -771,9 +802,22 @@ function update(delta)
 		panCamera(((viewRect.left + viewRect.right) /2 - ((screenSize.x*(1-cameraAhead))/2)), (viewRect.top + viewRect.bottom) /2 - screenSize.y/2);
 
 		xZoom = (canvasSize.x / (viewRect.right-viewRect.left))*(1-cameraBorder);
-		yZoom = (canvasSize.y / (viewRect.top-viewRect.bottom))*(1-cameraBorder);
-		zoom = xZoom < yZoom ? yZoom : xZoom;
-		tooFar = scaleWorld(zoom);
+		yZoom = (canvasSize.y / (viewRect.bottom-viewRect.top))*(1-cameraBorder);
+		if (xZoom < yZoom) {
+			tooFar = scaleWorld(xZoom);
+		} else {
+			tooFar = scaleWorld(xZoom);
+			scaleWorld(yZoom);
+		}
+		drums[0].filterNode.frequency
+		var filterVal = (xZoom-minWorldScale)/(maxWorldScale-minWorldScale);
+		if (filterVal < 0)filterVal = 0;
+		if (filterVal > 1)filterVal = 1;
+		filterVal = 1-filterVal;
+		console.log(filterVal);
+		filterVal /= 3;
+		filterVal += 0.66;
+		drums[0].filterNode.frequency.value = Math.pow(2, filterVal*10);
 
 		if (tooFar && slowest) {
 			//someone is out
