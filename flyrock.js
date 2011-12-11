@@ -751,7 +751,7 @@ function update(delta)
 		if (rock.sound && rock.sound.playing) {
 			//var mouseXVal = (mousePos.x/window.innerWidth);
 			//var freq = rock.velocity.x / rock.maxVelocity;
-			var freq = rock.velocity.y / 50 + 0.5;
+			var freq = -rock.velocity.y / 50 + 0.5;
 			freq /= 2;
 			freq += 0.5;
 			rock.sound.filterNode.frequency.value = Math.pow(2, freq*10);
@@ -875,6 +875,8 @@ function synchronise() {
 
 function removeRock(i) {
 	rocks[i].elementSpeed.innerHTML = "Out";
+	muteSound(rocks[i].sound);
+	unMuteSound(rocks[i].sparseSound);
 	rocks.splice(i,1);
 }
 
