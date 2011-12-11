@@ -60,7 +60,7 @@ var thisTime = 0;
 var delta = 0;
 var interval = 0;
 var targetInterval = 17;
-var playerCountDown = 1000;
+var playerCountDown = 2000;
 var endGame = false;
 var leftInGameTime = 0;
 var gameIsLocal = true;
@@ -244,9 +244,20 @@ function startAllSounds() {
 	}
 	playSound(drums[0]);
 }
+function stopAllSounds() {
+	for (var i in rocks) {
+		if (rocks[i].sound)
+			stopSound(rocks[i].sound);
+		if (rocks[i].sparseSound)
+			stopSound(rocks[i].sparseSound);
+	}
+	if (drums[0])
+		stopSound(drums[0]);
+}
 
 function loadSounds() {
 	audioContext = new webkitAudioContext();
+	stopAllSounds();
 
 	var gotten = 0;
 
@@ -287,7 +298,7 @@ function startingGrid() {
 		rocks[i].acceleration = {x:0, y:0};
 		rocks[i].x = 0;
 		rocks[i].y = 0;
-		rocks[i].maxVelocity = 0;
+		rocks[i].maxVelocity = {x:0, y:0};
 		rocks[i].force = {x:0, y:0};
 		rocks[i].speed = 1;
 		rocks[i].trail = [];
@@ -329,7 +340,7 @@ function startingGrid() {
 		rock.acceleration = {x:0, y:0};
 		rock.trail = [];
 		rock.force = {x:0, y:0};
-		rock.maxVelocity = 0;
+		rock.maxVelocity = {x:0, y:0};
 		rock.in = false;
 		rock.on = false;
 		rock.weight = 1;
@@ -535,6 +546,7 @@ function run_end(delta) {
 		startMessage.style.height += 10;
 	} else {
 		startMessage.style.height = 250;
+		stopAllSounds();
 		change_state(game_start);
 	}
 
@@ -657,7 +669,7 @@ function update(delta)
 	if (rocks.length == 1) {
 		if (!endGame) {
 			endGame = true;
-			leftInGameTime = 10000;
+			leftInGameTime = 30000;
 		}
 
 		leftInGameTime -= delta;
@@ -744,21 +756,27 @@ function update(delta)
 			rock.x += rock.velocity.x * delta;
 		}
 
-		if (rock.velocity.x > rock.maxVelocity) rock.maxVelocity = rock.velocity.x;
+		if (rock.velocity.x > rock.maxVelocity.x) rock.maxVelocity.x = rock.velocity.x;
+		if (Math.abs(rock.velocity.y) > rock.maxVelocity.y) rock.maxVelocity.y = Math.abs(rock.velocity.y);
 		
 
 		//sounds
 		if (rock.sound && rock.sound.playing) {
 			//var mouseXVal = (mousePos.x/window.innerWidth);
 			//var freq = rock.velocity.x / rock.maxVelocity;
-			var freq = -rock.velocity.y / 50 + 0.5;
-			freq /= 2;
-			freq += 0.5;
-			rock.sound.filterNode.frequency.value = Math.pow(2, freq*10);
+			if (rock.on && rock.in) {
+				var freq = Math.abs(rock.velocity.y) / rock.maxVelocity.y;
+				if (freq > 1) freq = 1;
+				if (freq < 0) freq = 0;
+				//rock.sound.gainNode.gain.value = (1-freq)*0.5+0.5;
+				freq /= 4;
+				freq += 0.66;
+				rock.sound.filterNode.frequency.value = Math.pow(2, freq*10);
+			}
 			//rock.sound.filterNode.Q.value = rock.underGround ? 20 : -20;
 
 			if (rock.on && rock.in) {
-				unMuteSound(rock.sound);
+			//	unMuteSound(rock.sound);
 				muteSound(rock.sparseSound);
 			} else {
 				muteSound(rock.sound);
@@ -930,7 +948,7 @@ function draw() {
 
 		if (ticker%5 == 0) {
 			rock.elementSpeed.innerHTML = (rock.velocity.x*100).toFixed(2) + " mph";
-			rock.elementScore.innerHTML = (rock.maxVelocity*100).toFixed(2) + " mph";
+			rock.elementScore.innerHTML = (rock.maxVelocity.x*100).toFixed(2) + " mph";
 
 		}
 
