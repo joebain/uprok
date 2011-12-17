@@ -2,7 +2,12 @@
 	<title>FLYROK</title>
 	<script type="application/x-javascript" src="jquery-1.7.min.js"></script>
 	<script type="application/x-javascript" src="socket.io/socket.io.js"></script>
+	<script type="application/x-javascript" src="underscore.js"></script>
+	<script type="application/x-javascript" src="slider.js"></script>
+	<script type="application/x-javascript" src="sounds.js"></script>
 	<script type="application/x-javascript" src="flyrock.js"></script>
+
+	<link href="slider.css" rel="stylesheet" type="text/css">
   <style>
     @font-face {
       font-family: "ostrich-bold";
@@ -16,32 +21,32 @@
       font-family: "ostrich-regular";
       src: url("ostrich-regular.ttf");
     }
-		.speedDiv {
-			width:125px;
-			height:30px;
-      font-family:"ostrich-regular", sans;
-			font-size:30px;
-			text-align:right;
-			display:inline-block;
-			margin:0px;
-      padding:2px;
-      color:#ffffff;
-		}
-		.button {
-			background-color:white;
-			color:black;
-      cursor:pointer;
-      border-radius:5px;
-      padding:7px;
-      text-align:center;
-      width: 115px;
-    }
+	.speedDiv {
+		width:125px;
+		height:30px;
+		font-family:"ostrich-regular", sans;
+		font-size:30px;
+		text-align:right;
+		display:inline-block;
+		margin:0px;
+		padding:2px;
+		color:#ffffff;
+	}
+	.button {
+		background-color:white;
+		color:black;
+		cursor:pointer;
+		border-radius:5px;
+		padding:7px;
+		text-align:center;
+		width: 115px;
+	}
     #startMessage {
       background-color:white;
       color:black;
       width:800px;
       height:250px;
-      margin:auto;
+     /* margin:auto;*/
       margin-top:5px;
       margin-bottom:5px;
       padding-top:10px;
@@ -155,14 +160,35 @@
     .choiceButton:hover {
       font-family:"ostrich-bold", sans;
     }
-    .choices {
-      text-align:center;
-    }
+	.choices {
+		text-align:center;
+	}
+	#container {
+		width:800;
+	/*	height:900;*/
+		position:relative;
+	/*	margin:auto;*/
+		display:inline-block;
+	}
+	#controls {
+		float:right;
+		display:inline-block;
+	}
+	.controlTitle {
+		font-size:24px;
+		cursor:pointer;
+	}
+	.controlBox {
+		border-radius:5px;
+		margin:5px;
+		padding:5px;
+		background-color:white;
+	}
 	</style>
 </head>
 
 <body style="background-color:#000000;">
-	<div id="container" style="width:1280; height:900; position:relative; margin:auto; ">
+	<div id="container">
     <div id="logo">
       <div id="logo_inner">
 <!--        <div style="font-family:ostrich-black; letter-spacing:40px; position:absolute; left:20px; top:60px" id="logo_front">-->
@@ -199,41 +225,39 @@
         <div id="3player" class="choiceButton">3</div>
         <div id="4player" class="choiceButton">4</div>
         <div id="5player" class="choiceButton">5</div>
-        <div id="6player" class="choiceButton">6</div>
       </div>
 <!--      <div id="startLogo1" class="joinLogo">x</div>-->
 <!--      <div id="startLogo2" class="joinLogo">x</div>-->
 <!--      <div id="startLogo3" class="joinLogo">x</div>-->
 <!--      <div id="startLogo4" class="joinLogo">x</div>-->
 <!--      <div id="startLogo5" class="joinLogo">x</div>-->
-<!--      <div id="startLogo6" class="joinLogo">x</div>-->
       <div id="startLogo1" class="joinLogo">z</div>
       <div id="startLogo2" class="joinLogo">c</div>
       <div id="startLogo3" class="joinLogo">x</div>
       <div id="startLogo4" class="joinLogo">n</div>
       <div id="startLogo5" class="joinLogo">b</div>
-      <div id="startLogo6" class="joinLogo">m</div>
     </div>
-		<canvas id="canvas" width="1280" height="800" style="position:relative;"></canvas>
-		<div id="player1speed" class="speedDiv">0.00 mph</div>
-		<div id="player2speed" class="speedDiv">0.00 mph</div>
-		<div id="player3speed" class="speedDiv">0.00 mph</div>
-		<div id="player4speed" class="speedDiv">0.00 mph</div>
-		<div id="player5speed" class="speedDiv">0.00 mph</div>
-		<div id="player6speed" class="speedDiv">0.00 mph</div>
-		<div id="player1score" class="speedDiv">0.00 mph</div>
-		<div id="player2score" class="speedDiv">0.00 mph</div>
-		<div id="player3score" class="speedDiv">0.00 mph</div>
-		<div id="player4score" class="speedDiv">0.00 mph</div>
-		<div id="player5score" class="speedDiv">0.00 mph</div>
-    <div id="player6score" class="speedDiv">0.00 mph</div>
+		<canvas id="canvas" width="800" height="400" style="position:relative;"></canvas>
+		<div style="visibility:hidden">
+			<div id="player1speed" class="speedDiv">0.00 mph</div>
+			<div id="player2speed" class="speedDiv">0.00 mph</div>
+			<div id="player3speed" class="speedDiv">0.00 mph</div>
+			<div id="player4speed" class="speedDiv">0.00 mph</div>
+			<div id="player5speed" class="speedDiv">0.00 mph</div>
+			<div id="player1score" class="speedDiv">0.00 mph</div>
+			<div id="player2score" class="speedDiv">0.00 mph</div>
+			<div id="player3score" class="speedDiv">0.00 mph</div>
+			<div id="player4score" class="speedDiv">0.00 mph</div>
+			<div id="player5score" class="speedDiv">0.00 mph</div>
+		</div>
     <div style="visibility:hidden">
       <div id="player1action" class="speedDiv button" onmousedown="pressMe(0);" onmouseup="unPressMe(0);" ontouchstart="pressMe(0);" ontouchend="unPressMe(0);">[press]</div>
       <div id="player2action" class="speedDiv button" onmousedown="pressMe(1);" onmouseup="unPressMe(1);" ontouchstart="pressMe(1);" ontouchend="unPressMe(1);">[press]</div>
       <div id="player3action" class="speedDiv button" onmousedown="pressMe(2);" onmouseup="unPressMe(2);" ontouchstart="pressMe(2);" ontouchend="unPressMe(2);">[press]</div>
       <div id="player4action" class="speedDiv button" onmousedown="pressMe(3);" onmouseup="unPressMe(3);" ontouchstart="pressMe(3);" ontouchend="unPressMe(3);">[press]</div>
       <div id="player5action" class="speedDiv button" onmousedown="pressMe(4);" onmouseup="unPressMe(4);" ontouchstart="pressMe(4);" ontouchend="unPressMe(4);">[press]</div>
-      <div id="player6action" class="speedDiv button" onmousedown="pressMe(5);" onmouseup="unPressMe(5);" ontouchstart="pressMe(5);" ontouchend="unPressMe(5);">[press]</div>
     </div>
+	</div>
+	<div id="controls">
 	</div>
 </body>

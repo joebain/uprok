@@ -21,8 +21,10 @@ var camera = {x:0, y:0};
 var desiredCamera = {x:0, y:0};
 var pointSpacing = 10;
 var pointHeight = 30;
-var screenSize = {x:2560, y:1600};
-var canvasSize = {x:1280, y:800};
+//var screenSize = {x:2560, y:1600};
+//var canvasSize = {x:1280, y:800};
+var screenSize = {x:1600, y:800};
+var canvasSize = {x:800, y:400};
 var groundPoints = 300000;
 var levelSize = {x:groundPoints*pointSpacing, y:screenSize.y * 1000};
 
@@ -87,10 +89,13 @@ var socket;
 
 var drums = [];
 
+var sliders = [];
+var updateSlidersParam = {value:false, name:"update sliders"};
+
 function init() {
 	var canvas = document.getElementById("canvas");
-	//    canvas.style.height = screenSize.y*worldScale;
-	//    canvas.style.width = screenSize.x*worldScale;
+	    canvas.style.height = canvasSize.y;
+	    canvas.style.width = canvasSize.x;
 	//    canvas.style.top = (window.innerHeight-screenSize.y*worldScale)/2;
 	//    canvas.style.left = (window.innerWidth-screenSize.x*worldScale)/2;
 
@@ -132,6 +137,118 @@ function init() {
 	change_state(game_start);
 
 	loop();
+}
+
+function makeToggle(param, name) {
+	var box = $("<div>");
+	
+	var toggleControl = $("<input type='checkbox'>");
+	toggleControl.val(param.value);
+	toggleControl.change(function() {
+		param.value = toggleControl.val();
+	});
+
+	box.append(toggleControl);
+
+	var label = $("<div>");
+	label.css("display", "inline-block");
+	label.text(name?name:param.name);
+
+	box.append(label);
+
+	return box;
+}
+
+function makeSlider(audioParams, name) {
+	var audioParam;
+	if (audioParams.length) {
+		audioParam = audioParams[0];
+	} else {
+		audioParam = audioParams;
+	}
+
+	var gainBox = $("<div>");
+
+	var gainControl = $("<input type='hidden'>");
+	gainControl.val((audioParam.value/(audioParam.maxValue-audioParam.minValue))*100);
+	gainBox.append(gainControl);
+	gainControl.PPSlider({width:300, onChanged: function(e) {
+		if (audioParams.length) {
+			for (var i in audioParams) {
+				var anAudioParam = audioParams[i];
+				anAudioParam.value = (parseInt(gainControl.val())/100)*(anAudioParam.maxValue-anAudioParam.minValue);
+			}
+		} else {
+			audioParam.value = (parseInt(gainControl.val())/100)*(audioParam.maxValue-audioParam.minValue);
+		}
+	}});
+
+	var gainText = $("<div>");
+	gainText.css("float","left");
+	if (name) {
+		gainText.text(name);
+	} else {
+		gainText.text(audioParam.name);
+	}
+	gainBox.append(gainText);
+
+	sliders.push({slider:gainControl[0].slider, param:audioParam});
+
+
+	return gainBox;
+}
+
+function setupControls() {
+	var controlDiv = $("#controls");
+	controlDiv.empty();
+
+	var globalControlsSurround = $("<div>");
+	globalControlsSurround.addClass("controlBox");
+	controlDiv.append(globalControlsSurround);
+
+	var globalControlsTitle = $("<div>");
+	globalControlsSurround.append(globalControlsTitle);
+	globalControlsTitle.text("Global controls");
+	globalControlsTitle.addClass("controlTitle");
+
+	var globalControls = $("<div>");
+	globalControlsSurround.append(globalControls);
+	globalControls.addClass("controlsContent clearfix");
+	globalControls.append(makeToggle(updateSlidersParam));
+	globalControls.append(makeSlider(_.map(rocks, function(rock){return rock.track.filterNode.mod;})));
+
+	for (var i in rocks) {
+		var rock = rocks[i];
+
+		var surroundBox = $("<div>");
+		surroundBox.addClass("controlBox");
+		var rockControls = $("<div>");
+		rockControls.addClass("controlsContent clearfix");
+
+		var title = $("<div>");
+		title.text("Rock " + (parseInt(i)+1));
+		(function(rockControls) {
+			title.click(function() {
+				rockControls.toggle("fast");
+			});
+		})(rockControls);
+		title.addClass("controlTitle");
+
+		surroundBox.append(title);
+		surroundBox.append(rockControls);
+
+		rockControls.append(makeSlider(rock.busySound.dryGainNode.gain, "busy gain"));
+		rockControls.append(makeSlider(rock.sparseSound.dryGainNode.gain, "sparse gain"));
+		rockControls.append(makeSlider(rock.track.wetGainNode.gain, "track gain"));
+
+		rockControls.append(makeSlider(rock.track.filterNode.frequency));
+		rockControls.append(makeSlider(rock.track.filterNode.Q));
+
+		rockControls.append(makeSlider(rock.track.delayNode.delayTime));
+		rockControls.append(makeSlider(rock.track.delayGainNode.gain, "delay feedback"));
+
+		controlDiv.append(surroundBox);
+	}
 }
 
 function gameStart(data) {
@@ -178,113 +295,6 @@ function updatePlayers(players) {
 		if (player.in && !rock.local && !rock.in) {
 			joinRock(player_i, false);
 		}
-	}
-}
-
-function getSound(soundObj, success) {
-	if (soundObj.isLoaded) return;
-	var request = new XMLHttpRequest();
-	request.open("GET", soundObj.url, true);
-	request.responseType = "arraybuffer";
-	request.onload = function() {
-		soundObj.buffer = audioContext.createBuffer(request.response, false);
-		soundObj.isLoaded = true;
-		success();
-	};
-	request.send();
-}
-
-function playSound(soundObj) {
-	if (soundObj.playing) return;
-
-	soundObj.gainNode = audioContext.createGainNode();
-	soundObj.gainNode.gain.value = 1.0;
-	soundObj.gainNode.connect(audioContext.destination);
-
-	soundObj.filterNode = audioContext.createBiquadFilter();
-	soundObj.filterNode.type = 0;
-	soundObj.filterNode.Q.value = 12;
-	soundObj.filterNode.frequency.value = 126;
-	soundObj.filterNode.connect(soundObj.gainNode);
-
-	soundObj.node = audioContext.createBufferSource();
-	soundObj.node.loop = true;
-	soundObj.node.buffer = soundObj.buffer;
-	soundObj.node.connect(soundObj.filterNode);
-    soundObj.node.noteOn(0);
-
-	soundObj.playing = true;
-	soundObj.playingTimeout = setTimeout(Math.round(soundObj.buffer.seconds*1000), function(){soundObj.playing=false;});
-}
-
-function stopSound(soundObj) {
-	if (!soundObj.playing) return;
-	if (soundObj.playingTimeout) clearTimeout(soundObj.playingTimeout);
-	soundObj.node.noteOff(0);
-	soundObj.playing = false;
-}
-
-function muteSound(soundObj) {
-	soundObj.gainNode.gain.value = 0.0;
-}
-
-function unMuteSound(soundObj) {
-	soundObj.gainNode.gain.value = 1.0;
-}
-
-function filterSound(soundObj) {
-}
-
-function startAllSounds() {
-	for (var i in rocks) {
-		playSound(rocks[i].sound);
-		muteSound(rocks[i].sound);
-		playSound(rocks[i].sparseSound);
-		muteSound(rocks[i].sparseSound);
-	}
-	playSound(drums[0]);
-}
-function stopAllSounds() {
-	for (var i in rocks) {
-		if (rocks[i].sound)
-			stopSound(rocks[i].sound);
-		if (rocks[i].sparseSound)
-			stopSound(rocks[i].sparseSound);
-	}
-	if (drums[0])
-		stopSound(drums[0]);
-}
-
-function loadSounds() {
-	audioContext = new webkitAudioContext();
-	stopAllSounds();
-
-	var gotten = 0;
-
-	drums = [];
-	drums.push({url:"sounds/drums_heavy.ogg"});
-	//drums.push({url:"sounds/behind_the_wall_of_sleep.ogg"});
-
-
-	for (var i in drums) {
-		var drum = drums[i];
-		getSound(drum, function(){gotten++; if (gotten == 11) startAllSounds();});
-	}
-	
-	rocks[0].sound = {url:"sounds/track1_heavy.ogg"};
-	rocks[1].sound = {url:"sounds/track2_heavy.ogg"};
-	rocks[2].sound = {url:"sounds/track3_heavy.ogg"};
-	rocks[3].sound = {url:"sounds/track4_heavy.ogg"};
-	rocks[4].sound = {url:"sounds/track5_heavy.ogg"};
-	rocks[0].sparseSound = {url:"sounds/track1_sparse.ogg"};
-	rocks[1].sparseSound = {url:"sounds/track2_sparse.ogg"};
-	rocks[2].sparseSound = {url:"sounds/track3_sparse.ogg"};
-	rocks[3].sparseSound = {url:"sounds/track4_sparse.ogg"};
-	rocks[4].sparseSound = {url:"sounds/track5_sparse.ogg"};
-	for (var i in rocks) {
-		var rock = rocks[i];
-		getSound(rock.sound, function(){gotten++; if (gotten == 11) startAllSounds();});
-		getSound(rock.sparseSound, function(){gotten++; if (gotten == 11) startAllSounds();});
 	}
 }
 
@@ -391,6 +401,7 @@ function startingGrid() {
 	//show/hide options
 	gameChoiceDiv.style.display = "";
 	playerChoiceDiv.style.display = "none";
+
 }
 
 function keysup(e) {
@@ -420,37 +431,12 @@ function joinRock(i, local) {
 }
 
 function controlSound() {
-	if (keys[80]) { // p
-		playSound(drums[0]);
-		for (var i in rocks) {
-			if (rocks[i].sound) {
-				playSound(rocks[i].sound);
-				playSound(rocks[i].sparseSound);
-			}
-		}
-	}
-	if (keys[79]) { //o
-		stopSound(drums[0]);
-		for (var i in rocks) {
-			if (rocks[i].sound) {
-				stopSound(rocks[i].sound);
-				stopSound(rocks[i].sparseSound);
-			}
-		}
-	}
 	if (keys[73]) { //i
 		muteSound(drums[0]);
 	}
 	if (keys[85]) { //u
 		unMuteSound(drums[0]);
 	}
-//	if (drums[0] && drums[0].playing) {
-//		var mouseXVal = (mousePos.x/window.innerWidth);
-//		mouseXVal /= 2;
-//		mouseXVal += 0.5;
-//		drums[0].filterNode.frequency.value = Math.pow(2, mouseXVal*10);
-//		drums[0].filterNode.Q.value = ((mousePos.y/window.innerHeight)-0.5) * 40;
-//	}
 }
 
 var rocksIn = 0;
@@ -470,8 +456,8 @@ function run_start(delta) {
 		var rock = rocks[i];
 		if (keys[rock.onKey] && rock.local) {
 			joinRock(i, true);
-			if (rock.sound && rock.sparseSound) {
-				unMuteSound(rock.sparseSound);
+			if (rock.sound) {
+				unMuteSound(rock.sound);
 			}
 		}
 	}
@@ -500,7 +486,7 @@ function run_start(delta) {
 				rocks[i].on = true;
 			}
 		} else if (raceCountDown <= 1000 && !flashed1) {
-			playSound(drums[0]);
+			unMuteSound(drums[0]);
 			flash = 1;
 			flashed1 = true;
 			for (var i in rocks) {
@@ -761,28 +747,7 @@ function update(delta)
 		
 
 		//sounds
-		if (rock.sound && rock.sound.playing) {
-			//var mouseXVal = (mousePos.x/window.innerWidth);
-			//var freq = rock.velocity.x / rock.maxVelocity;
-			if (rock.on && rock.in) {
-				var freq = Math.abs(rock.velocity.y) / rock.maxVelocity.y;
-				if (freq > 1) freq = 1;
-				if (freq < 0) freq = 0;
-				//rock.sound.gainNode.gain.value = (1-freq)*0.5+0.5;
-				freq /= 4;
-				freq += 0.66;
-				rock.sound.filterNode.frequency.value = Math.pow(2, freq*10);
-			}
-			//rock.sound.filterNode.Q.value = rock.underGround ? 20 : -20;
-
-			if (rock.on && rock.in) {
-			//	unMuteSound(rock.sound);
-				muteSound(rock.sparseSound);
-			} else {
-				muteSound(rock.sound);
-				unMuteSound(rock.sparseSound);
-			}
-		}
+		adjustSoundForRock(rock);
 
 		restrictToLevel(rock);
 
@@ -832,7 +797,6 @@ function update(delta)
 		if (filterVal < 0)filterVal = 0;
 		if (filterVal > 1)filterVal = 1;
 		filterVal = 1-filterVal;
-		console.log(filterVal);
 		filterVal /= 3;
 		filterVal += 0.66;
 		drums[0].filterNode.frequency.value = Math.pow(2, filterVal*10);
@@ -842,6 +806,12 @@ function update(delta)
 			removeRock(slowest);
 			console.log("booting out " + slowest);
 		}
+	}
+
+	if (updateSlidersParam.value) {
+		_.each(sliders, function(slider) {
+			slider.slider.setValue((slider.param.value/(slider.param.maxValue-slider.param.minValue))*100);
+		});
 	}
 
 }
@@ -893,8 +863,7 @@ function synchronise() {
 
 function removeRock(i) {
 	rocks[i].elementSpeed.innerHTML = "Out";
-	muteSound(rocks[i].sound);
-	unMuteSound(rocks[i].sparseSound);
+	muteSound(rocks[i].track);
 	rocks.splice(i,1);
 }
 
