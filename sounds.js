@@ -1,29 +1,56 @@
+var modFuncs = {
+	filterFrequency: function(rock, param) {
+						 param *= 0.25;//rock.track.filterNode.mod.value;
+						 param += 0.7;//(1-rock.track.filterNode.mod.value);
+						 rock.track.filterNode.frequency.value = Math.pow(2, param*10);
+					 },
+
+	filterResonance: function(rock, param) {
+						 param *= (rock.track.filterNode.Q.maxValue-rock.track.filterNode.Q.minValue);
+						 param += rock.track.filterNode.Q.minValue;
+						 rock.track.filterNode.Q.value = param;
+					 }
+};
+
+var paramGetters = {
+	velocityY: function(rock) {
+				   return Math.abs(rock.velocity.y) / 5;// rock.maxVelocity.y;
+			   },
+	velocityX: function(rock) {
+				   return Math.abs(rock.velocity.x) / 2;// rock.maxVelocity.y;
+			   },
+	velocity: function(rock) {
+				   return Math.sqrt(rock.velocity.x*rock.velocity.x+rock.velocity.y*rock.velocity.y) / 4;
+			   }
+};
+
+
 function adjustSoundForRock(rock) {
 
 	if (rock.track) {
-		//var mouseXVal = (mousePos.x/window.innerWidth);
-		//var freq = rock.velocity.x / rock.maxVelocity;
-		if (rock.on && rock.in) {
-			var freq = Math.abs(rock.velocity.y) / 5;// rock.maxVelocity.y;
-			if (freq > 1) freq = 1;
-			if (freq < 0) freq = 0;
-			//rock.sound.gainNode.gain.value = (1-freq)*0.5+0.5;
-			freq *= rock.track.filterNode.mod.value;
-			freq += (1-rock.track.filterNode.mod.value);
-			rock.track.filterNode.frequency.value = Math.pow(2, freq*10);
-		}
-		//rock.sound.filterNode.Q.value = rock.underGround ? 20 : -20;
+		if (rock.in) {
+			unMuteSound(rock.track);
 
-		if (!rock.in) {
-			muteSound(rock.track);
-		} else if (rock.on && rock.in) {
-			unMuteSound(rock.track);
-			rock.busySound.dryGainNode.gain.value = 1.0;
-			rock.sparseSound.dryGainNode.gain.value = 0.0;
+			for (var i in rock.track.mods) {
+				var mod = rock.track.mods[i];
+				if (mod.func && mod.param) {
+					var x = paramGetters[mod.param](rock);
+					x = x>1?1:x;
+					x = x<0?0:x;
+					modFuncs[mod.func](rock, x);
+				}
+			}
+
+
+			if (rock.on) {
+				rock.busySound.dryGainNode.gain.value = 1.0;
+				rock.sparseSound.dryGainNode.gain.value = 0.0;
+			} else {
+				rock.busySound.dryGainNode.gain.value = 0.0;
+				rock.sparseSound.dryGainNode.gain.value = 1.0;
+			}
 		} else {
-			unMuteSound(rock.track);
-			rock.busySound.dryGainNode.gain.value = 0.0;
-			rock.sparseSound.dryGainNode.gain.value = 1.0;
+			muteSound(rock.track);
 		}
 	}
 }
@@ -151,7 +178,7 @@ function loadSounds() {
 	rocks[4].sparseSound = {url:"sounds/track5_sparse.ogg"};
 	for (var i in rocks) {
 		var rock = rocks[i];
-		rock.track = {};
+		rock.track = {mods:[]};
 		getSound(rock.busySound, function(){gotten++; if (gotten == 11) startAllSounds();});
 		getSound(rock.sparseSound, function(){gotten++; if (gotten == 11) startAllSounds();});
 	}

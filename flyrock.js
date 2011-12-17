@@ -174,8 +174,8 @@ function makeMultichoice(param, name) {
 	var selectControl = $("<select>");
 	for (var i in param.choices) {
 		var option = $("<option>");
-		option.attr("value", param.choices[i].value);
-		option.text(param.choices[i].name);
+		option.attr("value", param.choices[i].value?param.choices[i].value:param.choices[i]);
+		option.text(param.choices[i].name?param.choices[i].name:param.choices[i]);
 		selectControl.append(option);
 	}
 	if (typeof param.value === "function") {
@@ -209,7 +209,7 @@ function makeSlider(audioParams, name) {
 	var gainControl = $("<input type='hidden'>");
 	gainControl.val((audioParam.value/(audioParam.maxValue-audioParam.minValue))*100);
 	gainBox.append(gainControl);
-	gainControl.PPSlider({width:300, hideTooltip:true, onChanged: function(e) {
+	gainControl.PPSlider({width:300, name:name, hideTooltip:true, onChanged: function(e) {
 		if (audioParams.length) {
 			for (var i in audioParams) {
 				var anAudioParam = audioParams[i];
@@ -229,7 +229,7 @@ function makeSlider(audioParams, name) {
 	}
 	gainBox.append(gainText);
 
-	sliders.push({slider:gainControl[0].slider, param:audioParam});
+	sliders.push({slider:gainControl[0].slider, param:audioParams});
 
 
 	return gainBox;
@@ -254,6 +254,57 @@ function setupControls() {
 	globalControls.append(makeToggle(updateSlidersParam));
 	globalControls.append(makeSlider(_.map(rocks, function(rock){return rock.track.filterNode.mod;})));
 
+	globalControls.append(makeSlider(_.map(rocks, function(rock){return rock.track.filterNode.frequency;}), "bigfreq"));
+	globalControls.append(makeSlider(_.map(rocks, function(rock){return rock.track.filterNode.Q;})));
+
+	for (var i = 0 ; i < 10 ; i++) {
+		(function(i) {
+			var box = $("<div>");
+			var modFuncsObj = {
+				value: function(value) {
+						   if (value) {
+							   _.each(rocks, function(rock) {
+								   if (!rock.track.mods[i]) {
+									   rock.track.mods[i] = {};
+								   }
+								   rock.track.mods[i].func = value;
+							   });
+						   } else {
+							   if (rocks[0].track.mods[i]) {
+								   return rocks[0].track.mods[i].func;
+							   }
+						   }
+					   },
+				choices: _.union([""],_.keys(modFuncs))
+			};
+			box.append(makeMultichoice(modFuncsObj, "mod func "));
+			var paramGettersObj = {
+				value: function(value) {
+						   if (value) {
+							   _.each(rocks, function(rock) {
+								   if (!rock.track.mods[i]) {
+									   rock.track.mods[i] = {};
+								   }
+								   rock.track.mods[i].param = value;
+							   });
+						   } else {
+							   if (rocks[0].track.mods[i]) {
+								   return rocks[0].track.mods[i].param;
+							   }
+						   }
+					   },
+				choices: _.union([""],_.keys(paramGetters))
+			};
+			box.append(makeMultichoice(paramGettersObj, "param "));
+
+			globalControls.append(box);
+		})(i);
+	}
+	globalControlsTitle.click(function() {
+		globalControls.toggle("fast");
+	});
+	
+
 	for (var i in rocks) {
 		var rock = rocks[i];
 
@@ -277,10 +328,6 @@ function setupControls() {
 		rockControls.append(makeSlider(rock.busySound.dryGainNode.gain, "busy gain"));
 		rockControls.append(makeSlider(rock.sparseSound.dryGainNode.gain, "sparse gain"));
 		rockControls.append(makeSlider(rock.track.wetGainNode.gain, "track gain"));
-
-		rockControls.append(makeSlider(rock.track.filterNode.frequency));
-		rockControls.append(makeSlider(rock.track.filterNode.Q));
-		rockControls.append(makeSlider(rock.track.filterNode.gain, "filter gain"));
 
 		(function(rock) {
 			var filterTypeObj = {
@@ -311,6 +358,10 @@ function setupControls() {
 			};
 			rockControls.append(makeMultichoice(filterTypeObj, "filter type"));
 		})(rock);
+		rockControls.append(makeSlider(rock.track.filterNode.frequency, "frequency"+rock.originalNumber));
+		rockControls.append(makeSlider(rock.track.filterNode.Q));
+//		rockControls.append(makeSlider(rock.track.filterNode.gain, "filter gain"));
+
 
 		rockControls.append(makeSlider(rock.track.delayNode.delayTime));
 		rockControls.append(makeSlider(rock.track.delayGainNode.gain, "delay feedback"));
@@ -677,6 +728,17 @@ function loop() {
 			run_end(delta);
 			break;
 	}
+
+	if (updateSlidersParam.value) {
+		_.each(sliders, function(slider) {
+			if (slider.param.length) {
+				//slider.slider.setValue((slider.param[0].value/(slider.param[0].maxValue-slider.param[0].minValue))*100);
+			} else {
+				slider.slider.setValue((slider.param.value/(slider.param.maxValue-slider.param.minValue))*100);
+			}
+		});
+	}
+
 	interval = targetInterval - (new Date().getTime() - thisTime);
 	interval = interval < 1 ? 1 : interval;
 	setTimeout(loop, interval);
@@ -876,11 +938,6 @@ function update(delta)
 		}
 	}
 
-	if (updateSlidersParam.value) {
-		_.each(sliders, function(slider) {
-			slider.slider.setValue((slider.param.value/(slider.param.maxValue-slider.param.minValue))*100);
-		});
-	}
 
 }
 

@@ -73,6 +73,7 @@
         };
 
 		var setValue = this.setValue = function(val) {
+			currentVal = val;
           var upperBound = (container.find('.pp-slider-scale').width()-container.find('.pp-slider-button').width());
 		  val = Math.min(val,100);
 		  val = Math.max(val,0);
