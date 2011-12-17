@@ -159,6 +159,43 @@ function makeToggle(param, name) {
 	return box;
 }
 
+function makeMultichoice(param, name) {
+	var box = $("<div>");
+	box.addClass("clearfix");
+	box.css("margin-bottom", "10px");
+	
+
+	var label = $("<div>");
+	label.css("display", "inline-block");
+	label.text(name?name:param.name);
+	label.css("margin-right", "10px");
+
+	box.append(label);
+	var selectControl = $("<select>");
+	for (var i in param.choices) {
+		var option = $("<option>");
+		option.attr("value", param.choices[i].value);
+		option.text(param.choices[i].name);
+		selectControl.append(option);
+	}
+	if (typeof param.value === "function") {
+		selectControl.val(param.value());
+	} else {
+		selectControl.val(param.value);
+	}
+	selectControl.change(function() {
+		if (typeof param.value === "function") {
+			param.value(selectControl.val());
+		} else {
+			param.value = selectControl.val();
+		}
+	});
+
+	box.append(selectControl);
+
+	return box;
+}
+
 function makeSlider(audioParams, name) {
 	var audioParam;
 	if (audioParams.length) {
@@ -172,7 +209,7 @@ function makeSlider(audioParams, name) {
 	var gainControl = $("<input type='hidden'>");
 	gainControl.val((audioParam.value/(audioParam.maxValue-audioParam.minValue))*100);
 	gainBox.append(gainControl);
-	gainControl.PPSlider({width:300, onChanged: function(e) {
+	gainControl.PPSlider({width:300, hideTooltip:true, onChanged: function(e) {
 		if (audioParams.length) {
 			for (var i in audioParams) {
 				var anAudioParam = audioParams[i];
@@ -243,6 +280,37 @@ function setupControls() {
 
 		rockControls.append(makeSlider(rock.track.filterNode.frequency));
 		rockControls.append(makeSlider(rock.track.filterNode.Q));
+		rockControls.append(makeSlider(rock.track.filterNode.gain, "filter gain"));
+
+		(function(rock) {
+			var filterTypeObj = {
+				value: function(value) {
+						   if (value) {
+							   rock.track.filterNode.type = parseInt(value);
+							   //this is to make sure the change is noticed, not reliable though
+							   setTimeout( function() {
+								   rock.track.filterNode.frequency.value += 1;
+								   setTimeout( function() {
+									   rock.track.filterNode.frequency.value -= 1;
+								   }, 300);
+							   }, 300);
+						   } else {
+							   return rock.track.filterNode.type;
+						   }
+					   },
+			choices: [
+				{name: "lowpass", value:0},
+				{name: "highpass", value:1},
+				{name: "bandpass", value:2}
+//				{name: "low shelf", value:3},
+//				{name: "high shelf", value:4},
+//				{name: "peaking", value:5},
+//				{name: "notch", value:6},
+//				{name: "allpass", value:7}
+			]
+			};
+			rockControls.append(makeMultichoice(filterTypeObj, "filter type"));
+		})(rock);
 
 		rockControls.append(makeSlider(rock.track.delayNode.delayTime));
 		rockControls.append(makeSlider(rock.track.delayGainNode.gain, "delay feedback"));

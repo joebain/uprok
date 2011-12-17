@@ -4,7 +4,7 @@ function adjustSoundForRock(rock) {
 		//var mouseXVal = (mousePos.x/window.innerWidth);
 		//var freq = rock.velocity.x / rock.maxVelocity;
 		if (rock.on && rock.in) {
-			var freq = Math.abs(rock.velocity.y) / rock.maxVelocity.y;
+			var freq = Math.abs(rock.velocity.y) / 5;// rock.maxVelocity.y;
 			if (freq > 1) freq = 1;
 			if (freq < 0) freq = 0;
 			//rock.sound.gainNode.gain.value = (1-freq)*0.5+0.5;
@@ -17,12 +17,10 @@ function adjustSoundForRock(rock) {
 		if (!rock.in) {
 			muteSound(rock.track);
 		} else if (rock.on && rock.in) {
-			console.log("unmuting");
 			unMuteSound(rock.track);
 			rock.busySound.dryGainNode.gain.value = 1.0;
 			rock.sparseSound.dryGainNode.gain.value = 0.0;
 		} else {
-			console.log("muting");
 			unMuteSound(rock.track);
 			rock.busySound.dryGainNode.gain.value = 0.0;
 			rock.sparseSound.dryGainNode.gain.value = 1.0;
