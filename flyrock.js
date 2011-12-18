@@ -21,10 +21,10 @@ var camera = {x:0, y:0};
 var desiredCamera = {x:0, y:0};
 var pointSpacing = 10;
 var pointHeight = 30;
-//var screenSize = {x:2560, y:1600};
-//var canvasSize = {x:1280, y:800};
-var screenSize = {x:1600, y:800};
-var canvasSize = {x:800, y:400};
+var screenSize = {x:2560, y:1600};
+var canvasSize = {x:1280, y:800};
+//var screenSize = {x:1600, y:800};
+//var canvasSize = {x:800, y:400};
 var groundPoints = 300000;
 var levelSize = {x:groundPoints*pointSpacing, y:screenSize.y * 1000};
 
@@ -94,8 +94,8 @@ var updateSlidersParam = {value:false, name:"update sliders"};
 
 function init() {
 	var canvas = document.getElementById("canvas");
-	    canvas.style.height = canvasSize.y;
-	    canvas.style.width = canvasSize.x;
+	    canvas.height = canvasSize.y;
+	    canvas.width = canvasSize.x;
 	//    canvas.style.top = (window.innerHeight-screenSize.y*worldScale)/2;
 	//    canvas.style.left = (window.innerWidth-screenSize.x*worldScale)/2;
 
