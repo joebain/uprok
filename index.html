@@ -40,6 +40,7 @@
 		padding:7px;
 		text-align:center;
 		width: 115px;
+		display:inline-block;
 	}
     #startMessage {
       background-color:white;
@@ -175,7 +176,7 @@
 		display:inline-block;
 		overflow:auto;
 		position:absolute;
-		top:0;
+		top:30;
 		bottom:0;
 		right:0;
 		width:420px;
@@ -189,6 +190,21 @@
 		margin:5px;
 		padding:5px;
 		background-color:white;
+	}
+	#canvasSizer {
+		border-radius:5px;
+		padding:3px;
+		background-color:white;
+		color:black;
+		cursor:pointer;
+		text-align:center;
+	}
+	#saveLoadDiv {
+		position:absolute;
+		top:0;
+		right:0;
+		height:30px;
+		width:420px;
 	}
 	</style>
 </head>
@@ -244,6 +260,7 @@
       <div id="startLogo5" class="joinLogo">b</div>
     </div>
 		<canvas id="canvas" width="800" height="400" style="position:relative;"></canvas>
+		<div id="canvasSizer">change size</div>
 		<div style="visibility:hidden">
 			<div id="player1speed" class="speedDiv">0.00 mph</div>
 			<div id="player2speed" class="speedDiv">0.00 mph</div>
@@ -263,7 +280,17 @@
       <div id="player4action" class="speedDiv button" onmousedown="pressMe(3);" onmouseup="unPressMe(3);" ontouchstart="pressMe(3);" ontouchend="unPressMe(3);">[press]</div>
       <div id="player5action" class="speedDiv button" onmousedown="pressMe(4);" onmouseup="unPressMe(4);" ontouchstart="pressMe(4);" ontouchend="unPressMe(4);">[press]</div>
     </div>
+</div>
+<div id="saveLoadDiv">
+	<div class="button">
+		<input id="saveButton" type="submit" value="save">
 	</div>
+	<div class="button" style="width:200px" >
+		<form id="loadForm">load
+			<input id="loadButton" type="file" style="width:90px">
+		</form>
+	</div>
+</div>
 	<div id="controls">
 	</div>
 </body>

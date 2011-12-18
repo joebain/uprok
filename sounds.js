@@ -11,27 +11,28 @@ var modFuncs = {
 						 rock.track.filterNode.Q.value = param;
 					 },
 	delayFeedback: function(rock, param) {
-						 param *= (rock.track.delayGainNode.gain.maxValue-rock.track.delayGainNode.gain.minValue);
-						 param += rock.track.delayGainNode.gain.minValue;
-						 rock.track.delayGainNode.gain.value = param;
-					 },
+					   param *= 0.7; // dont want too much
+					   param *= (rock.track.delayGainNode.gain.maxValue-rock.track.delayGainNode.gain.minValue);
+					   param += rock.track.delayGainNode.gain.minValue;
+					   rock.track.delayGainNode.gain.value = param;
+				   },
 	delayTime: function(rock, param) {
-						 param *= (rock.track.delayNode.delayTime.maxValue-rock.track.delayNode.delayTime.minValue);
-						 param += rock.track.delayNode.delayTime.minValue;
-						 rock.track.delayNode.delayTime.value = param;
-					 }
+				   param *= (rock.track.delayNode.delayTime.maxValue-rock.track.delayNode.delayTime.minValue);
+				   param += rock.track.delayNode.delayTime.minValue;
+				   rock.track.delayNode.delayTime.value = param;
+			   }
 };
 
 var paramGetters = {
 	velocityY: function(rock) {
-				   return Math.abs(rock.velocity.y) / 5;// rock.maxVelocity.y;
+				   return Math.abs(rock.velocity.y) / rock.maxVelocity.y;
 			   },
 	velocityX: function(rock) {
-				   return Math.abs(rock.velocity.x) / 2;// rock.maxVelocity.y;
+				   return Math.abs(rock.velocity.x) / rock.maxVelocity.y;
 			   },
 	velocity: function(rock) {
-				   return Math.sqrt(rock.velocity.x*rock.velocity.x+rock.velocity.y*rock.velocity.y) / 4;
-			   },
+				  return Math.sqrt(rock.velocity.x*rock.velocity.x+rock.velocity.y*rock.velocity.y) / Math.sqrt(rock.maxVelocity.x*rock.maxVelocity.x+rock.maxVelocity.y*rock.maxVelocity.y);
+			  },
 	positionX: function(rock) {
 				   return (rock.x-viewRect.left) / (viewRect.right-viewRect.left);
 			   },
@@ -47,8 +48,8 @@ function adjustSoundForRock(rock) {
 		if (rock.in) {
 			unMuteSound(rock.track);
 
-			for (var i in rock.track.mods) {
-				var mod = rock.track.mods[i];
+			for (var i in globalMods) {
+				var mod = globalMods[i];
 				if (mod.func && mod.param) {
 					var x = paramGetters[mod.param](rock);
 					x = x>1?1:x;
@@ -194,7 +195,7 @@ function loadSounds() {
 	rocks[4].sparseSound = {url:"sounds/track5_sparse.ogg"};
 	for (var i in rocks) {
 		var rock = rocks[i];
-		rock.track = {mods:[{func:"filterFrequency", param:"velocityY"}]};
+		rock.track = {};
 		getSound(rock.busySound, function(){gotten++; if (gotten == 11) startAllSounds();});
 		getSound(rock.sparseSound, function(){gotten++; if (gotten == 11) startAllSounds();});
 	}

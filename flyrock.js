@@ -22,9 +22,8 @@ var desiredCamera = {x:0, y:0};
 var pointSpacing = 10;
 var pointHeight = 30;
 var screenSize = {x:2560, y:1600};
-var canvasSize = {x:1280, y:800};
-//var screenSize = {x:1600, y:800};
-//var canvasSize = {x:800, y:400};
+//var canvasSize = {x:1280, y:800};
+var canvasSize = {x:640, y:400};
 var groundPoints = 300000;
 var levelSize = {x:groundPoints*pointSpacing, y:screenSize.y * 1000};
 
@@ -88,6 +87,8 @@ var playerChoice = {};
 var socket;
 
 var drums = [];
+var globalMods = [];
+var globalModsUI = [];
 
 var sliders = [];
 var updateSlidersParam = {value:false, name:"update sliders"};
@@ -96,8 +97,6 @@ function init() {
 	var canvas = document.getElementById("canvas");
 	    canvas.height = canvasSize.y;
 	    canvas.width = canvasSize.x;
-	//    canvas.style.top = (window.innerHeight-screenSize.y*worldScale)/2;
-	//    canvas.style.left = (window.innerWidth-screenSize.x*worldScale)/2;
 
 	context = canvas.getContext("2d");
 
@@ -132,6 +131,15 @@ function init() {
 	socket.on('news', handleNews);
 
 
+	$("#canvasSizer").click(function() {
+		if (canvas.width == 1280) {
+			canvas.width = canvasSize.x = 640;
+			canvas.height = canvasSize.y = 400;
+		} else {
+			canvas.width = canvasSize.x = 1280;
+			canvas.height = canvasSize.y = 800;
+		}
+	});
 
 
 	change_state(game_start);
@@ -203,11 +211,14 @@ function makeMultichoice(param, name) {
 		option.text(param.choices[i].name?param.choices[i].name:param.choices[i]);
 		selectControl.append(option);
 	}
-	if (typeof param.value === "function") {
-		selectControl.val(param.value());
-	} else {
-		selectControl.val(param.value);
-	}
+	param.updateUI = function() {
+		if (typeof param.value === "function") {
+			selectControl.val(param.value());
+		} else {
+			selectControl.val(param.value);
+		}
+	};
+	param.updateUI();
 	selectControl.change(function() {
 		if (typeof param.value === "function") {
 			param.value(selectControl.val());
@@ -264,6 +275,7 @@ function setupControls() {
 	var controlDiv = $("#controls");
 	controlDiv.empty();
 
+	//global controls
 	var globalControlsSurround = $("<div>");
 	globalControlsSurround.addClass("controlBox");
 	controlDiv.append(globalControlsSurround);
@@ -293,45 +305,47 @@ function setupControls() {
 	globalControls.append(makeSlider(_.map(rocks, function(rock){return rock.track.filterNode.frequency;})));
 	globalControls.append(makeSlider(_.map(rocks, function(rock){return rock.track.filterNode.Q;})));
 
+	globalMods = [];
+	globalModsUI = [];
 	for (var i = 0 ; i < 10 ; i++) {
 		(function(i) {
 			var box = $("<div>");
-			var modFuncsObj = {
-				value: function(value) {
-						   if (value) {
-							   _.each(rocks, function(rock) {
-								   if (!rock.track.mods[i]) {
-									   rock.track.mods[i] = {};
-								   }
-								   rock.track.mods[i].func = value;
-							   });
-						   } else {
-							   if (rocks[0].track.mods[i]) {
-								   return rocks[0].track.mods[i].func;
-							   }
-						   }
-					   },
-				choices: _.union([""],_.keys(modFuncs))
-			};
-			box.append(makeMultichoice(modFuncsObj, "mod func "));
 			var paramGettersObj = {
 				value: function(value) {
 						   if (value) {
-							   _.each(rocks, function(rock) {
-								   if (!rock.track.mods[i]) {
-									   rock.track.mods[i] = {};
-								   }
-								   rock.track.mods[i].param = value;
-							   });
+							   if (!globalMods[i]) {
+								   globalMods[i] = {};
+							   }
+							   globalMods[i].param = value;
 						   } else {
-							   if (rocks[0].track.mods[i]) {
-								   return rocks[0].track.mods[i].param;
+							   if (globalMods[i]) {
+								   return globalMods[i].param;
 							   }
 						   }
 					   },
 				choices: _.union([""],_.keys(paramGetters))
 			};
-			box.append(makeMultichoice(paramGettersObj, "param "));
+			var paramMultiChoice = makeMultichoice(paramGettersObj, "param ");
+			globalModsUI.push(paramGettersObj);
+			box.append(paramMultiChoice);
+			var modFuncsObj = {
+				value: function(value) {
+						   if (value) {
+							   if (!globalMods[i]) {
+								   globalMods[i] = {};
+							   }
+							   globalMods[i].func = value;
+						   } else {
+							   if (globalMods[i]) {
+								   return globalMods[i].func;
+							   }
+						   }
+					   },
+				choices: _.union([""],_.keys(modFuncs))
+			};
+			var funcMultiChoice = makeMultichoice(modFuncsObj, " modifies ");
+			globalModsUI.push(modFuncsObj);
+			box.append(funcMultiChoice);
 
 			globalControls.append(box);
 		})(i);
@@ -341,6 +355,7 @@ function setupControls() {
 	});
 	
 
+	// per rock controls
 	for (var i in rocks) {
 		var rock = rocks[i];
 
@@ -414,6 +429,33 @@ function setupControls() {
 		rockControls.append(makeSlider(rock.track.delayGainNode.gain, "delay feedback"));
 
 		controlDiv.append(surroundBox);
+	}
+
+	// load and save
+	$("#loadButton").change(function(e) {
+		var reader = new FileReader();
+		reader.onload = function(e) {
+			loadSettings(e.target.result);
+		};
+		reader.readAsText(this.files[0]);
+	});
+	$("#saveButton").click(function() {
+		var content = JSON.stringify(globalMods);
+		var uriContent = "data:application/octet-stream," + encodeURIComponent(content);
+		var newWindow = window.open(uriContent, 'neuesDokument');
+	});
+
+	$.get("default.json", function(string) {loadSettings(string);});
+}
+
+function loadSettings(settingsString) {
+	try {
+		globalMods = JSON.parse(settingsString);
+		for (var g in globalModsUI) {
+			globalModsUI[g].updateUI();
+		}
+	} catch(e) {
+		window.alert("Could not read settings file");
 	}
 }
 
