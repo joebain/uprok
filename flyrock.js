@@ -440,8 +440,11 @@ function setupControls() {
 		reader.readAsText(this.files[0]);
 	});
 	$("#saveButton").click(function() {
-		var content = JSON.stringify(globalMods);
-		var uriContent = "data:application/octet-stream," + encodeURIComponent(content);
+		var content = {
+			globalMods: globalMods,
+			rocks: _.map(rocks, rock2SoundParams)
+		};
+		var uriContent = "data:application/octet-stream," + encodeURIComponent(JSON.stringify(content));
 		var newWindow = window.open(uriContent, 'neuesDokument');
 	});
 
@@ -450,13 +453,49 @@ function setupControls() {
 
 function loadSettings(settingsString) {
 	try {
-		globalMods = JSON.parse(settingsString);
-		for (var g in globalModsUI) {
-			globalModsUI[g].updateUI();
+		var content = JSON.parse(settingsString);
+		if (content.globalMods) {
+			globalMods = content.globalMods;
+			for (var g in globalModsUI) {
+				globalModsUI[g].updateUI();
+			}
+		} else {
+			throw "error";
+		}
+		if (content.rocks) {
+			for (var r in rocks) {
+				soundParams2Rock(rocks[r], content.rocks[r]);
+			}
+			updateSliders();
+		} else {
+			throw "error";
 		}
 	} catch(e) {
 		window.alert("Could not read settings file");
 	}
+}
+
+function rock2SoundParams(rock) {
+	var params = {};
+	params.busyGain = rock.busySound.dryGainNode.gain.value;
+	params.sparseGain = rock.sparseSound.dryGainNode.gain.value;
+	params.wetGain = rock.track.wetGainNode.gain.value;
+	params.filterFrequency = rock.track.filterNode.frequency.value;
+	params.filterResonance = rock.track.filterNode.Q.value;
+	params.filterType = rock.track.filterNode.type;
+	params.delayTime = rock.track.delayNode.delayTime.value;
+	params.delayFeedback = rock.track.delayGainNode.gain.value;
+	return params;
+}
+function soundParams2Rock(rock, params) {
+	rock.busySound.dryGainNode.gain.value = params.busyGain;
+	rock.sparseSound.dryGainNode.gain.value = params.sparseGain;
+	rock.track.wetGainNode.gain.value = params.wetGain;
+	rock.track.filterNode.frequency.value = params.filterFrequency;
+	rock.track.filterNode.Q.value = params.filterResonance;
+	rock.track.filterNode.type = params.filterType;
+	rock.track.delayNode.delayTime.value = params.delayTime;
+	rock.track.delayGainNode.gain.value = params.delayFeedback;
 }
 
 function gameStart(data) {
@@ -820,18 +859,22 @@ function loop() {
 	}
 
 	if (updateSlidersParam.value) {
-		_.each(sliders, function(slider) {
-			if (slider.param.length) {
-				//slider.slider.setValue((slider.param[0].value/(slider.param[0].maxValue-slider.param[0].minValue))*100);
-			} else {
-				slider.slider.setValue((slider.param.value/(slider.param.maxValue-slider.param.minValue))*100);
-			}
-		});
+		updateSliders();
 	}
 
 	interval = targetInterval - (new Date().getTime() - thisTime);
 	interval = interval < 1 ? 1 : interval;
 	setTimeout(loop, interval);
+}
+
+function updateSliders() {
+	_.each(sliders, function(slider) {
+		if (slider.param.length) {
+			//slider.slider.setValue((slider.param[0].value/(slider.param[0].maxValue-slider.param[0].minValue))*100);
+		} else {
+			slider.slider.setValue((slider.param.value/(slider.param.maxValue-slider.param.minValue))*100);
+		}
+	});
 }
 
 function scaleWorld(scale)
