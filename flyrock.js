@@ -39,8 +39,8 @@ var worldScale = 1;
 var desiredWorldScale = 1;
 var ticker = 0;
 var rockTrailPointer = 0;
-var rockTrailLength = 20;
-var rockTrailInterval = 2;
+var rockTrailLength = 100;
+var rockTrailInterval = 1;
 var rockMinSize = 10;
 var maxRockSpeed = 0;
 var rocktrailWidth = 0.06;
@@ -139,13 +139,38 @@ function init() {
 	loop();
 }
 
-function makeToggle(param, name) {
+function makeToggle(params, name) {
+	var param;
+	if (params.length) {
+		param = params[0];
+	} else {
+		param = params;
+	}
 	var box = $("<div>");
 	
 	var toggleControl = $("<input type='checkbox'>");
-	toggleControl.val(param.value);
+	if (typeof param.value === "function") {
+		toggleControl.prop("checked",param.value());
+	} else {
+		toggleControl.prop("checked",param.value);
+	}
 	toggleControl.change(function() {
-		param.value = toggleControl.val();
+		if (params.length) {
+			for (var p in params) {
+				param = params[p];
+				if (typeof param.value === "function") {
+					param.value(toggleControl.val());
+				} else {
+					param.value = toggleControl.val();
+				}
+			}
+		} else {
+			if (typeof param.value === "function") {
+				param.value(toggleControl.val());
+			} else {
+				param.value = toggleControl.val();
+			}
+		}
 	});
 
 	box.append(toggleControl);
@@ -252,9 +277,20 @@ function setupControls() {
 	globalControlsSurround.append(globalControls);
 	globalControls.addClass("controlsContent clearfix");
 	globalControls.append(makeToggle(updateSlidersParam));
-	globalControls.append(makeSlider(_.map(rocks, function(rock){return rock.track.filterNode.mod;})));
+	globalControls.append(makeToggle(_.map(rocks,
+					function(rock) {
+						return {
+							value: function(value) {
+									   if (value) {
+										   rock.autopilot = value;
+									   } else {
+										   return rock.autopilot;
+									   }
+								   }
+						}
+					}), "autopilot"));
 
-	globalControls.append(makeSlider(_.map(rocks, function(rock){return rock.track.filterNode.frequency;}), "bigfreq"));
+	globalControls.append(makeSlider(_.map(rocks, function(rock){return rock.track.filterNode.frequency;})));
 	globalControls.append(makeSlider(_.map(rocks, function(rock){return rock.track.filterNode.Q;})));
 
 	for (var i = 0 ; i < 10 ; i++) {
@@ -325,6 +361,17 @@ function setupControls() {
 		surroundBox.append(title);
 		surroundBox.append(rockControls);
 
+		(function(rock) {
+			rockControls.append(makeToggle({
+				value:function(value) {
+						  if (value) {
+							  rock.autopilot = value;
+						  } else {
+							  return rock.autopilot;
+						  }
+					  }}, "autopilot")
+				);
+		})(rock);
 		rockControls.append(makeSlider(rock.busySound.dryGainNode.gain, "busy gain"));
 		rockControls.append(makeSlider(rock.sparseSound.dryGainNode.gain, "sparse gain"));
 		rockControls.append(makeSlider(rock.track.wetGainNode.gain, "track gain"));
@@ -438,6 +485,7 @@ function startingGrid() {
 		rocks[i].originalNumber = i;
 		rocks[i].player_id = -1;
 		rocks[i].local = false;
+		rocks[i].autopilot = false;
 		rockMap[i] = rocks[i];
 	}
 
@@ -798,22 +846,17 @@ function update(delta)
 	for (i in rocks) {
 		rock = rocks[i];
 
-		if (rock.originalNumber == 0) {
+		if (!rock.autopilot) {
 			rock.on = false;
 		}
 		if (keys[rock.onKey]) {//z
 			rock.on = true;
-			//      rock.weight = 1.5;
-		} else {
-			//      rock.wight = 1;
 		}
-
 		controlSound();
 
 		restrictToLevel(rock);
 		rock.underGround = isBelowGround(rock);
-		//if (Math.random() > 0.99999999999) {
-		if (rock.originalNumber != 0) {
+		if (rock.autopilot) {
 			if (ticker % 10 == 0) {
 				rock.on = rock.underGround;
 			}
@@ -845,6 +888,12 @@ function update(delta)
 				rock.acceleration.x -= rock.force.x * heavyAirFriction*rock.speed;
 			}
 			rock.acceleration.y -= rock.force.y * airFriction;
+		}
+		if (Math.abs(rock.force.y) < 0.3 && rock.underGround > 0 && rock.underGround < 1) {
+			if (i == 0) {
+				console.log("helping " + Math.abs(rock.force.y) + ", " + rock.underGround);
+			}
+			rock.acceleration.y *= 5;
 		}
 
 		// velocity
@@ -1025,19 +1074,24 @@ function draw() {
 	for (var i in rocks) {
 		var rock = rocks[i];
 		if (!rock.in) return;
-		context.strokeStyle ="rgba(0,0,0," + (1-flash) + ")";// "#000000";
-		context.fillStyle ="rgba(0,0,0," + (1-flash) + ")";// "#000000";
+		if (rock.on) {
+			context.fillStyle = rock.colour;
+		} else {
+			context.fillStyle ="rgba(0,0,0," + (1-flash) + ")";// "#000000";
+		}
 		context.beginPath();
 		context.arc((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale, rockMinSize*worldScale, 0, Math.PI*2, true);
 		context.fill();
 
 		if (rock.on) {
-			context.strokeStyle = "#000000";
+			//context.fillStyle ="rgba(0,0,0," + (1-flash) + ")";// "#000000";
+		} else {
 			context.fillStyle = rock.colour;
 			context.beginPath();
 			context.arc((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale, (rockMinSize*0.5)*worldScale, 0, Math.PI*2, true);
 			context.fill();
 		}
+		
 
 
 		if (ticker%5 == 0) {
@@ -1045,6 +1099,7 @@ function draw() {
 			rock.elementScore.innerHTML = (rock.maxVelocity.x*100).toFixed(2) + " mph";
 
 		}
+	}
 
 //		context.strokeStyle = "#000000";
 //		context.lineWidth = rock.size*rockMinSize*rocktrailWidth*worldScale*3;
@@ -1068,25 +1123,32 @@ function draw() {
 //		context.stroke();
 		context.strokeStyle = rock.colour;
 		context.lineWidth = rock.size*rockMinSize*rocktrailWidth*worldScale;
-		context.beginPath();
-		first = false;
-		context.moveTo((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale);
-		for (var i = 0 ; i < rockTrailLength ; i++) {
+		//context.beginPath();
+		//context.moveTo((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale);
+		var j;
+		var prevj;
+		var first = true;
+		for (var i = rockTrailLength-1 ; i >= 0 ; i--) {
+			prevj = j;
 			j = ((rockTrailPointer-i)+rockTrailLength)%rockTrailLength;
-			if (rock.trail[j]) {
-				if (first) {
-					context.moveTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y)*worldScale);
-					first = false;
-				} else {
-					context.lineTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y)*worldScale);
+			if (!first) {
+				for (var r in rocks) {
+					var rock = rocks[r];
+					if (rock.trail[j] && !rock.first) {
+						context.strokeStyle = rock.colour;
+						context.lineWidth = rock.size*rockMinSize*rocktrailWidth*worldScale*Math.log(i+1);
+						context.beginPath();
+						context.moveTo((rock.trail[prevj].x - camera.x)*worldScale, (rock.trail[prevj].y - camera.y)*worldScale);
+						context.lineTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y)*worldScale);
+						context.stroke();
+					}
 				}
-			} else {
-				first = true;
 			}
+			first = false;
 		}
-		context.stroke();
+		//context.stroke();
 
-	}
+	//}
 	ticker ++;
 
 	if (endGame) {

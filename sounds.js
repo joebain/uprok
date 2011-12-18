@@ -9,6 +9,16 @@ var modFuncs = {
 						 param *= (rock.track.filterNode.Q.maxValue-rock.track.filterNode.Q.minValue);
 						 param += rock.track.filterNode.Q.minValue;
 						 rock.track.filterNode.Q.value = param;
+					 },
+	delayFeedback: function(rock, param) {
+						 param *= (rock.track.delayGainNode.gain.maxValue-rock.track.delayGainNode.gain.minValue);
+						 param += rock.track.delayGainNode.gain.minValue;
+						 rock.track.delayGainNode.gain.value = param;
+					 },
+	delayTime: function(rock, param) {
+						 param *= (rock.track.delayNode.delayTime.maxValue-rock.track.delayNode.delayTime.minValue);
+						 param += rock.track.delayNode.delayTime.minValue;
+						 rock.track.delayNode.delayTime.value = param;
 					 }
 };
 
@@ -21,6 +31,12 @@ var paramGetters = {
 			   },
 	velocity: function(rock) {
 				   return Math.sqrt(rock.velocity.x*rock.velocity.x+rock.velocity.y*rock.velocity.y) / 4;
+			   },
+	positionX: function(rock) {
+				   return (rock.x-viewRect.left) / (viewRect.right-viewRect.left);
+			   },
+	positionY: function(rock) {
+				   return (rock.y-viewRect.top) / (viewRect.bottom-viewRect.top);
 			   }
 };
 
@@ -178,7 +194,7 @@ function loadSounds() {
 	rocks[4].sparseSound = {url:"sounds/track5_sparse.ogg"};
 	for (var i in rocks) {
 		var rock = rocks[i];
-		rock.track = {mods:[]};
+		rock.track = {mods:[{func:"filterFrequency", param:"velocityY"}]};
 		getSound(rock.busySound, function(){gotten++; if (gotten == 11) startAllSounds();});
 		getSound(rock.sparseSound, function(){gotten++; if (gotten == 11) startAllSounds();});
 	}
