@@ -46,6 +46,7 @@ var rocktrailWidth = 0.06;
 var terminalYVel = 10;
 
 var rocks = [];
+var originalRocks = [];
 var numberOfRocks = 5;
 var localRocks = [];
 var rockMap = {};
@@ -65,6 +66,7 @@ var playerCountDown = 2000;
 var endGame = false;
 var leftInGameTime = 0;
 var gameIsLocal = true;
+var online = false;
 
 var mode;
 var game_start = 1;
@@ -92,6 +94,7 @@ var globalModsUI = [];
 
 var sliders = [];
 var updateSlidersParam = {value:false, name:"update sliders"};
+var previousSessionSettings;
 
 function init() {
 	var canvas = document.getElementById("canvas");
@@ -123,12 +126,17 @@ function init() {
 		})(i);
 	}
 
-	socket = io.connect('http://127.0.0.1:1337');
-	socket.on('updatePlayers', updatePlayers);
-	socket.on('confirmPlayers', confirmPlayers);
-	socket.on('gameStart', gameStart);
-	socket.on('gameFinished', gameFinished);
-	socket.on('news', handleNews);
+	try {
+		socket = io.connect('http://127.0.0.1:1337');
+		socket.on('updatePlayers', updatePlayers);
+		socket.on('confirmPlayers', confirmPlayers);
+		socket.on('gameStart', gameStart);
+		socket.on('gameFinished', gameFinished);
+		socket.on('news', handleNews);
+		online = true;
+	} catch (e) {
+		online = false;
+	}
 
 
 	$("#canvasSizer").click(function() {
@@ -163,20 +171,21 @@ function makeToggle(params, name) {
 		toggleControl.prop("checked",param.value);
 	}
 	toggleControl.change(function() {
+		var toggleControlVal = toggleControl.prop("checked");
 		if (params.length) {
 			for (var p in params) {
 				param = params[p];
 				if (typeof param.value === "function") {
-					param.value(toggleControl.val());
+					param.value(toggleControlVal);
 				} else {
-					param.value = toggleControl.val();
+					param.value = toggleControlVal;
 				}
 			}
 		} else {
 			if (typeof param.value === "function") {
-				param.value(toggleControl.val());
+				param.value(toggleControlVal);
 			} else {
-				param.value = toggleControl.val();
+				param.value = toggleControlVal;
 			}
 		}
 	});
@@ -293,7 +302,7 @@ function setupControls() {
 					function(rock) {
 						return {
 							value: function(value) {
-									   if (value) {
+									   if (value !== undefined) {
 										   rock.autopilot = value;
 									   } else {
 										   return rock.autopilot;
@@ -312,7 +321,7 @@ function setupControls() {
 			var box = $("<div>");
 			var paramGettersObj = {
 				value: function(value) {
-						   if (value) {
+						   if (value !== undefined) {
 							   if (!globalMods[i]) {
 								   globalMods[i] = {};
 							   }
@@ -330,7 +339,7 @@ function setupControls() {
 			box.append(paramMultiChoice);
 			var modFuncsObj = {
 				value: function(value) {
-						   if (value) {
+						   if (value !== undefined) {
 							   if (!globalMods[i]) {
 								   globalMods[i] = {};
 							   }
@@ -442,18 +451,28 @@ function setupControls() {
 	$("#saveButton").click(function() {
 		var content = {
 			globalMods: globalMods,
-			rocks: _.map(rocks, rock2SoundParams)
+			rocks: _.map(originalRocks, rock2SoundParams)
 		};
 		var uriContent = "data:application/octet-stream," + encodeURIComponent(JSON.stringify(content));
 		var newWindow = window.open(uriContent, 'neuesDokument');
 	});
 
-	$.get("default.json", function(string) {loadSettings(string);});
+	if (previousSessionSettings) {
+		loadSettings(previousSessionSettings);
+	} else {
+		$.get("default.json", function(string) {loadSettings(string);});
+	}
 }
 
 function loadSettings(settingsString) {
 	try {
-		var content = JSON.parse(settingsString);
+		var content;
+		if (typeof settingsString === "string") {
+			content = JSON.parse(settingsString);
+		} else {
+			content = settingsString;
+		}
+		previousSessionSettings = content;
 		if (content.globalMods) {
 			globalMods = content.globalMods;
 			for (var g in globalModsUI) {
@@ -649,6 +668,9 @@ function startingGrid() {
 	//show/hide options
 	gameChoiceDiv.style.display = "";
 	playerChoiceDiv.style.display = "none";
+
+	originalRocks = [];
+	_.each(rocks, function(rock){originalRocks.push(rock);});
 
 }
 

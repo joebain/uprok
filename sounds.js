@@ -1,5 +1,6 @@
 var modFuncs = {
 	filterFrequency: function(rock, param) {
+						 rock.track.filterGainNode.gain.value = 1-Math.log(param*(Math.E-1)+1);
 						 param *= 0.25;//rock.track.filterNode.mod.value;
 						 param += 0.7;//(1-rock.track.filterNode.mod.value);
 						 rock.track.filterNode.frequency.value = Math.pow(2, param*10);
@@ -20,7 +21,13 @@ var modFuncs = {
 				   param *= (rock.track.delayNode.delayTime.maxValue-rock.track.delayNode.delayTime.minValue);
 				   param += rock.track.delayNode.delayTime.minValue;
 				   rock.track.delayNode.delayTime.value = param;
-			   }
+			   },
+	wetGain: function(rock, param) {
+				 rock.track.wetGainNode.gain.value = param;
+			 },
+	invWetGain: function(rock, param) {
+				 rock.track.wetGainNode.gain.value = param;
+			 }
 };
 
 var paramGetters = {
@@ -38,7 +45,10 @@ var paramGetters = {
 			   },
 	positionY: function(rock) {
 				   return (rock.y-viewRect.top) / (viewRect.bottom-viewRect.top);
-			   }
+			   },
+	playersRemaining: function(rock) {
+						  return 1 - (rocks.length-1) / (numberOfRocks-1);
+					  }
 };
 
 
@@ -96,6 +106,8 @@ function createFilters(soundObj) {
 	soundObj.filterNode.Q.value = 12;
 	soundObj.filterNode.frequency.value = 126;
 	soundObj.filterNode.mod = {value:0.2, minValue:0, maxValue:1, name:"mod"};
+	soundObj.filterGainNode = audioContext.createGainNode();
+	soundObj.filterGainNode.gain.value = 1;
 
 	soundObj.delayNode = audioContext.createDelayNode();
 	soundObj.delayNode.delayTime.value = 0.1;
@@ -106,7 +118,9 @@ function createFilters(soundObj) {
 	soundObj.delayGainNode.connect(soundObj.delayNode);
 	soundObj.delayGainNode.connect(soundObj.wetGainNode);
 	soundObj.delayNode.connect(soundObj.delayGainNode);
-	soundObj.filterNode.connect(soundObj.delayNode);
+	soundObj.filterNode.connect(soundObj.filterGainNode);
+	soundObj.filterGainNode.connect(soundObj.delayNode);
+	soundObj.filterGainNode.connect(soundObj.wetGainNode);
 	soundObj.wetGainNode.connect(audioContext.destination);
 
 	soundObj.inputNode = soundObj.filterNode;
