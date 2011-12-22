@@ -1,9 +1,13 @@
 var modFuncs = {
 	filterFrequency: function(rock, param) {
-						 rock.track.filterGainNode.gain.value = 1-Math.log(param*(Math.E-1)+1);
-						 param *= 0.25;//rock.track.filterNode.mod.value;
-						 param += 0.7;//(1-rock.track.filterNode.mod.value);
-						 rock.track.filterNode.frequency.value = Math.pow(2, param*10);
+						 if (rock.track.filterNode.type === 0) { // low pass
+							 rock.track.filterGainNode.gain.value = 1-Math.log(param*(Math.E-1)+1);
+							 param *= 0.25;//rock.track.filterNode.mod.value;
+							 param += 0.7;//(1-rock.track.filterNode.mod.value);
+							 rock.track.filterNode.frequency.value = Math.pow(2, param*10);
+						 } else {
+							 rock.track.filterNode.frequency.value = param * (rock.track.filterNode.frequency.maxValue - rock.track.filterNode.frequency.minValue) + rock.track.filterNode.frequency.minValue;
+						 }
 					 },
 
 	filterResonance: function(rock, param) {
@@ -102,7 +106,7 @@ function createFilters(soundObj) {
 	soundObj.wetGainNode.gain.value = 1.0;
 
 	soundObj.filterNode = audioContext.createBiquadFilter();
-	soundObj.filterNode.type = 0;
+	soundObj.filterNode.type = 1;
 	soundObj.filterNode.Q.value = 12;
 	soundObj.filterNode.frequency.value = 126;
 	soundObj.filterNode.mod = {value:0.2, minValue:0, maxValue:1, name:"mod"};
@@ -110,10 +114,10 @@ function createFilters(soundObj) {
 	soundObj.filterGainNode.gain.value = 1;
 
 	soundObj.delayNode = audioContext.createDelayNode();
-	soundObj.delayNode.delayTime.value = 0.1;
+	soundObj.delayNode.delayTime.value = 0.0;
 
 	soundObj.delayGainNode = audioContext.createGainNode();
-	soundObj.delayGainNode.gain.value = 0.5;
+	soundObj.delayGainNode.gain.value = 0.0;
 
 	soundObj.delayGainNode.connect(soundObj.delayNode);
 	soundObj.delayGainNode.connect(soundObj.wetGainNode);

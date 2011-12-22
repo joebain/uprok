@@ -313,6 +313,34 @@ function setupControls() {
 
 	globalControls.append(makeSlider(_.map(rocks, function(rock){return rock.track.filterNode.frequency;})));
 	globalControls.append(makeSlider(_.map(rocks, function(rock){return rock.track.filterNode.Q;})));
+	var filterTypeObj = {
+		value: function(value) {
+				   if (value) {
+					   for (var r in rocks) {
+						   var rock = rocks[r];
+						   (function(rock) {
+							   rock.track.filterNode.type = parseInt(value);
+							   //this is to make sure the change is noticed, not reliable though
+							   setTimeout( function() {
+								   rock.track.filterNode.frequency.value += 1;
+								   setTimeout( function() {
+									   rock.track.filterNode.frequency.value -= 1;
+								   }, 300);
+							   }, 300);
+						   })(rock);
+					   }
+				   } else {
+					   return rocks[0].track.filterNode.type;
+				   }
+			   },
+		choices: [
+		{name: "lowpass", value:0},
+		{name: "highpass", value:1},
+		{name: "bandpass", value:2}
+		]
+	};
+	var filterMultiChoice = makeMultichoice(filterTypeObj, "filter type");
+	globalControls.append(filterMultiChoice);
 
 	globalMods = [];
 	globalModsUI = [];
