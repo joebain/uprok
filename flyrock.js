@@ -126,17 +126,18 @@ function init() {
 		})(i);
 	}
 
-	try {
-		socket = io.connect('http://127.0.0.1:1337');
-		socket.on('updatePlayers', updatePlayers);
-		socket.on('confirmPlayers', confirmPlayers);
-		socket.on('gameStart', gameStart);
-		socket.on('gameFinished', gameFinished);
-		socket.on('news', handleNews);
-		online = true;
-	} catch (e) {
+//    try {
+//        socket = io.connect('http://127.0.0.1:1337');
+//        socket.on('updatePlayers', updatePlayers);
+//        socket.on('confirmPlayers', confirmPlayers);
+//        socket.on('gameStart', gameStart);
+//        socket.on('gameFinished', gameFinished);
+//        socket.on('news', handleNews);
+//        online = true;
+//    } catch (e) {
+//        console.log("couldn't load socket io " + e.toString());
 		online = false;
-	}
+//    }
 
 
 	$("#canvasSizer").click(function() {

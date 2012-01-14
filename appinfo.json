@@ -1,0 +1,10 @@
+{
+    "build_id": "20120114165041",
+    "vendor": "Oh Games",
+    "name": "Flyrok",
+    "resizable": true,
+    "developer_email": "joe@ohgames.co.uk",
+    "module_dirs": [],
+    "menubars": false,
+    "version": "0.1"
+}
