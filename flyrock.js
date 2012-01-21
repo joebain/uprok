@@ -1005,37 +1005,22 @@ function update(delta)
 		//acceleration
 
 		rock.acceleration.x = 0;
-		rock.acceleration.y = gravity;
 		if (rock.underGround) {
+		rock.acceleration.y = -gravity;
 			rock.acceleration.x += -rock.force.x * groundFriction.x;
-			// attempt to stop the skimming that often happens at the start
-			//      if (rock.underGround < 10 && rock.velocity.y > 0 && rock.velocity.y < gravity*0.5) {
-			//        rock.acceleration.y += gravity;
-			//      } else
-			if (Math.abs(rock.velocity.y) > minRockYVelocity) {
-				rock.acceleration.y += -rock.force.y * groundFriction.y;
-			}
-			rock.acceleration.y += -groundForce;
 			if (rock.on) {
 				rock.acceleration.x += rockJumpGroundAcceleration.x*rock.speed;
 				rock.acceleration.y -= rockJumpGroundAcceleration.y;
 			}
 		} else {
+		rock.acceleration.y = gravity;
 			if (rock.on) {
 				rock.acceleration.x -= rock.force.x * heavyAirFriction*rock.speed;
 			}
-			rock.acceleration.y -= rock.force.y * airFriction;
-		}
-		if (Math.abs(rock.force.y) < 0.3 && rock.underGround > 0 && rock.underGround < 1) {
-			if (i == 0) {
-				console.log("helping " + Math.abs(rock.force.y) + ", " + rock.underGround);
-			}
-			rock.acceleration.y *= 5;
 		}
 
 		// velocity
 
-		//    if (rock.velocity.y < terminalYVel) rock.velocity.y = terminalYVel;
 		rock.velocity.y += rock.acceleration.y * delta;
 		rock.velocity.x += rock.acceleration.x * delta;
 		if ( manualControl) {
@@ -1077,7 +1062,7 @@ function update(delta)
 
 		// trails
 		if (rock.on) {
-			rock.trail[rockTrailPointer] = {x:rock.x, y:rock.y};
+			rock.trail[rockTrailPointer] = {x:rock.x, y:rock.y, underGround:rock.underGround};
 		}
 	}
 	for (i in rocks) {
@@ -1281,6 +1266,11 @@ function draw() {
 						context.lineWidth = rock.size*rockMinSize*rocktrailWidth*worldScale*Math.log(i+1);
 						context.beginPath();
 						context.moveTo((rock.trail[prevj].x - camera.x)*worldScale, (rock.trail[prevj].y - camera.y)*worldScale);
+						if (!rock.trail[prevj].underGround || !rock.trail[j].underGround) {
+							var vec = {x:rock.trail[j].x-rock.trail[prevj].x, y:rock.trail[j].y-rock.trail[prevj].y};
+							context.lineTo((rock.trail[prevj].x+vec.x*0.33-vec.y*0.5 - camera.x)*worldScale, (rock.trail[prevj].y+vec.y*0.33+vec.x*0.5 - camera.y)*worldScale);
+							context.lineTo((rock.trail[prevj].x+vec.x*0.66+vec.y*0.5 - camera.x)*worldScale, (rock.trail[prevj].y+vec.y*0.66-vec.x*0.5 - camera.y)*worldScale);
+						}
 						context.lineTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y)*worldScale);
 						context.stroke();
 					}
