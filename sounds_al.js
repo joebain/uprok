@@ -90,11 +90,16 @@ function getSound(soundObj, success) {
 	console.log("get the muther troking sundz!!");
 	if (soundObj.isLoaded) return;
 	
-	var audio = document.getElementById(soundObj.tagId);
+//    var audio = document.getElementById(soundObj.tagId);
+	var audio = $("<audio>");
+	audio.attr("src", soundObj.url);
+	audio.attr("type", "audio/ogg");
+	audio.attr("controls", "controls");
+	$("#samples").append(audio);
 
 	soundObj.data = {data:[], sampleRate:audioDevice.sampleRate, channelCount:2};
 
-	audio.addEventListener('loadedmetadata',
+	audio[0].addEventListener('loadedmetadata',
 						   function(event) {
 							   console.log("loaded metadata");
 //                               soundObj.totalBytes = audio.duration * 44100; 
@@ -102,7 +107,7 @@ function getSound(soundObj, success) {
 						   },
 						   false);
 
-    audio.addEventListener("ended",
+    audio[0].addEventListener("ended",
 						   function() {
 							   console.log("audio loaded");
 							   soundObj.isLoaded = true;
@@ -116,13 +121,14 @@ function getSound(soundObj, success) {
 							   // data.channelCount
 							   soundObj.sampler.load(soundObj.data);
 
-							   soundObj.sampler.noteOn(440);
+							   loopSampler(soundObj.sampler);
+							   soundObj.sampler.looping = true;
 
 							   success();
 						   },
 						   false);	
 
-	audio.addEventListener('MozAudioAvailable',
+	audio[0].addEventListener('MozAudioAvailable',
 						   function(event) {
 							   var samples = event.frameBuffer;
 							   var time = event.time;
@@ -132,8 +138,8 @@ function getSound(soundObj, success) {
 							   }
 						   },
 						   false);
-	audio.muted = true;
-	audio.play();
+	audio[0].muted = true;
+	audio[0].play();
 
 }
 
@@ -209,6 +215,9 @@ function startAllSounds() {
 //    }
 	createFilters(drums[0]);
 	attachSound(drums[0], drums[0]);
+
+
+	drums[0].sampler.noteOn(440);
 //    setupControls();
 }
 function stopAllSounds() {
@@ -222,10 +231,28 @@ function stopAllSounds() {
 		stopSound(drums[0]);
 }
 
+function loopSampler(sampler) {
+	sampler.addPreProcessing(function() {
+//        if (this.looping) {
+//            this.noteOn(440);
+//        }
+	});
+}
+
 function audioCallback(buffer, channelCount) {
 	for (var d in drums) {
 		if (drums[d].sampler) {
 			drums[d].sampler.append(buffer, channelCount);
+		}
+	}
+
+	for (var r in rocks) {
+		var rock = rocks[r];
+		if (rock.busySound.sampler) {
+			rock.busySound.sampler.append(buffer, channelCount);
+		}
+		if (rock.sparseSound.sampler) {
+			rock.sparseSound.sampler.append(buffer, channelCount);
 		}
 	}
 
@@ -239,29 +266,27 @@ function loadSounds() {
 	var gotten = 0;
 
 	drums = [];
-	drums.push({tagId:"drums_heavy"});
-	//drums.push({url:"sounds/behind_the_wall_of_sleep.ogg"});
-
+	drums.push({url:"sounds/drums_heavy.ogg"});
 
 	for (var i in drums) {
 		var drum = drums[i];
-		getSound(drum, function(){if (++gotten === 1) startAllSounds();});
+		getSound(drum, function(){if (++gotten === 11) startAllSounds();});
 	}
 	
-//    rocks[0].busySound = {url:"sounds/track1_heavy.ogg"};
-//    rocks[1].busySound = {url:"sounds/track2_heavy.ogg"};
-//    rocks[2].busySound = {url:"sounds/track3_heavy.ogg"};
-//    rocks[3].busySound = {url:"sounds/track4_heavy.ogg"};
-//    rocks[4].busySound = {url:"sounds/track5_heavy.ogg"};
-//    rocks[0].sparseSound = {url:"sounds/track1_sparse.ogg"};
-//    rocks[1].sparseSound = {url:"sounds/track2_sparse.ogg"};
-//    rocks[2].sparseSound = {url:"sounds/track3_sparse.ogg"};
-//    rocks[3].sparseSound = {url:"sounds/track4_sparse.ogg"};
-//    rocks[4].sparseSound = {url:"sounds/track5_sparse.ogg"};
-//    for (var i in rocks) {
-//        var rock = rocks[i];
-//        rock.track = {};
-//        getSound(rock.busySound, function(){gotten++; if (gotten == 11) startAllSounds();});
-//        getSound(rock.sparseSound, function(){gotten++; if (gotten == 11) startAllSounds();});
-//    }
+	rocks[0].busySound = {url:"sounds/track1_heavy.ogg"};
+	rocks[1].busySound = {url:"sounds/track2_heavy.ogg"};
+	rocks[2].busySound = {url:"sounds/track3_heavy.ogg"};
+	rocks[3].busySound = {url:"sounds/track4_heavy.ogg"};
+	rocks[4].busySound = {url:"sounds/track5_heavy.ogg"};
+	rocks[0].sparseSound = {url:"sounds/track1_sparse.ogg"};
+	rocks[1].sparseSound = {url:"sounds/track2_sparse.ogg"};
+	rocks[2].sparseSound = {url:"sounds/track3_sparse.ogg"};
+	rocks[3].sparseSound = {url:"sounds/track4_sparse.ogg"};
+	rocks[4].sparseSound = {url:"sounds/track5_sparse.ogg"};
+	for (var i in rocks) {
+		var rock = rocks[i];
+		rock.track = {};
+		getSound(rock.busySound, function(){gotten++; if (gotten == 11) startAllSounds();});
+		getSound(rock.sparseSound, function(){gotten++; if (gotten == 11) startAllSounds();});
+	}
 }

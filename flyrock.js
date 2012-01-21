@@ -731,10 +731,10 @@ function joinRock(i, local) {
 
 function controlSound() {
 	if (keys[73]) { //i
-		muteSound(drums[0]);
+//        muteSound(drums[0]);
 	}
 	if (keys[85]) { //u
-		unMuteSound(drums[0]);
+//        unMuteSound(drums[0]);
 	}
 }
 
@@ -785,7 +785,7 @@ function run_start(delta) {
 				rocks[i].on = true;
 			}
 		} else if (raceCountDown <= 1000 && !flashed1) {
-			unMuteSound(drums[0]);
+//            unMuteSound(drums[0]);
 			flash = 1;
 			flashed1 = true;
 			for (var i in rocks) {
@@ -1061,8 +1061,6 @@ function update(delta)
 		if (Math.abs(rock.velocity.y) > rock.maxVelocity.y) rock.maxVelocity.y = Math.abs(rock.velocity.y);
 		
 
-		//sounds
-		adjustSoundForRock(rock);
 
 		restrictToLevel(rock);
 
@@ -1080,6 +1078,11 @@ function update(delta)
 		if (rock.on) {
 			rock.trail[rockTrailPointer] = {x:rock.x, y:rock.y};
 		}
+	}
+	for (i in rocks) {
+		rock = rocks[i];
+		//sounds
+		adjustSoundForRock(rock);
 	}
 
 	if (ticker % 5 == 0) {
@@ -1107,14 +1110,14 @@ function update(delta)
 			tooFar = scaleWorld(xZoom);
 			scaleWorld(yZoom);
 		}
-		drums[0].filterNode.frequency
+//        drums[0].filterNode.frequency
 		var filterVal = (xZoom-minWorldScale)/(maxWorldScale-minWorldScale);
 		if (filterVal < 0)filterVal = 0;
 		if (filterVal > 1)filterVal = 1;
 		filterVal = 1-filterVal;
 		filterVal /= 3;
 		filterVal += 0.66;
-		drums[0].filterNode.frequency.value = Math.pow(2, filterVal*10);
+//        drums[0].filterNode.frequency.value = Math.pow(2, filterVal*10);
 
 		if (tooFar && slowest) {
 			//someone is out

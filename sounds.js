@@ -27,11 +27,50 @@ var modFuncs = {
 				   rock.track.delayNode.delayTime.value = param;
 			   },
 	wetGain: function(rock, param) {
-				 rock.track.wetGainNode.gain.value = param;
+//                 rock.track.wetGainNode.gain.value = Math.log(param*(Math.E-1)+1);
+				 rock.track.wetGainNode.gain.value = param*0.8 +0.2;
 			 },
 	invWetGain: function(rock, param) {
 				 rock.track.wetGainNode.gain.value = param;
-			 }
+			 },
+	sparseSound: function(rock, param) {
+		if (param) {
+			rock.busySound.dryGainNode.gain.value = 0.0;
+			rock.sparseSound.dryGainNode.gain.value = 1.0;
+		} else {
+			rock.busySound.dryGainNode.gain.value = 1.0;
+			rock.sparseSound.dryGainNode.gain.value = 0.0;
+		}
+	},
+	busySound: function(rock, param) {
+		if (param) {
+			rock.busySound.dryGainNode.gain.value = 1.0;
+			rock.sparseSound.dryGainNode.gain.value = 0.0;
+		} else {
+			rock.busySound.dryGainNode.gain.value = 0.0;
+			rock.sparseSound.dryGainNode.gain.value = 1.0;
+		}
+	},
+	justDelay: function(rock, param) {
+		if (param) {
+			if (!rock.track.justDelayTimer) {
+				rock.track.justDelayTimer = setTimeout(function() {
+					rock.track.justDelayInGainNode.gain.value = 0.0;
+				}, 500);
+				rock.track.justDelayNode.delayTime.value = 0.5;
+				rock.track.justDelayInGainNode.gain.value = 1.0;
+				rock.track.justDelayOutGainNode.gain.value = 1.0;
+				rock.track.notJustDelayGainNode.gain.value = 0.0;
+			}
+		} else {
+			if (rock.track.justDelayTimer) {
+				clearTimeout(rock.track.justDelayTimer);
+				delete rock.track.justDelayTimer;
+			}
+			rock.track.justDelayOutGainNode.gain.value = 0.0;
+			rock.track.notJustDelayGainNode.gain.value = 1.0;
+		}
+	}
 };
 
 var paramGetters = {
@@ -52,7 +91,16 @@ var paramGetters = {
 			   },
 	playersRemaining: function(rock) {
 						  return 1 - (rocks.length-1) / (numberOfRocks-1);
-					  }
+					  },
+	rockOn: function(rock) {
+		return rock.on?1:0;
+	},
+	rockUnderGround: function(rock) {
+		return rock.underGround?1:0;
+	},
+	rockAboveGroundAndOn: function(rock) {
+		return (!rock.underGround && rock.on) ? 1 :0;
+	}
 };
 
 
@@ -73,13 +121,6 @@ function adjustSoundForRock(rock) {
 			}
 
 
-			if (rock.on) {
-				rock.busySound.dryGainNode.gain.value = 1.0;
-				rock.sparseSound.dryGainNode.gain.value = 0.0;
-			} else {
-				rock.busySound.dryGainNode.gain.value = 0.0;
-				rock.sparseSound.dryGainNode.gain.value = 1.0;
-			}
 		} else {
 			muteSound(rock.track);
 		}
@@ -119,15 +160,35 @@ function createFilters(soundObj) {
 	soundObj.delayGainNode = audioContext.createGainNode();
 	soundObj.delayGainNode.gain.value = 0.0;
 
+	soundObj.justDelayNode = audioContext.createDelayNode();
+	soundObj.justDelayNode.delayTime = 0.5;
+	soundObj.justDelayInGainNode = audioContext.createGainNode();
+	soundObj.justDelayInGainNode.gain.value = 1.0;
+	soundObj.justDelayOutGainNode = audioContext.createGainNode();
+	soundObj.justDelayOutGainNode.gain.value = 0.0;
+	soundObj.notJustDelayGainNode = audioContext.createGainNode();
+	soundObj.notJustDelayGainNode.gain.value = 1.0;
+
 	soundObj.delayGainNode.connect(soundObj.delayNode);
-	soundObj.delayGainNode.connect(soundObj.wetGainNode);
 	soundObj.delayNode.connect(soundObj.delayGainNode);
+
+	soundObj.delayNode.connect(soundObj.justDelayInGainNode);
+	soundObj.delayNode.connect(soundObj.notJustDelayGainNode);
+	
+	soundObj.justDelayInGainNode.connect(soundObj.justDelayNode);
+	soundObj.justDelayNode.connect(soundObj.justDelayInGainNode);
+	soundObj.justDelayNode.connect(soundObj.justDelayOutGainNode);
+
+	soundObj.justDelayOutGainNode.connect(soundObj.wetGainNode);
+	soundObj.notJustDelayGainNode.connect(soundObj.wetGainNode);
+
 	soundObj.filterNode.connect(soundObj.filterGainNode);
 	soundObj.filterGainNode.connect(soundObj.delayNode);
-	soundObj.filterGainNode.connect(soundObj.wetGainNode);
+
 	soundObj.wetGainNode.connect(audioContext.destination);
 
-	soundObj.inputNode = soundObj.filterNode;
+	soundObj.inputNode = soundObj.delayNode;
+//    soundObj.inputNode = soundObj.filterNode;
 
 }
 
@@ -151,7 +212,7 @@ function attachSound(soundObj, otherSoundObj) {
 function stopSound(soundObj) {
 	if (!soundObj.playing) return;
 	if (soundObj.playingTimeout) clearTimeout(soundObj.playingTimeout);
-	soundObj.node.noteOff(0);
+	soundObj.noteOff(0);
 	soundObj.playing = false;
 }
 
@@ -170,8 +231,8 @@ function startAllSounds() {
 		attachSound(rocks[i].sparseSound, rocks[i].track);
 		muteSound(rocks[i].track);
 	}
-	createFilters(drums[0]);
-	attachSound(drums[0], drums[0]);
+//    createFilters(drums[0]);
+//    attachSound(drums[0], drums[0]);
 	setupControls();
 }
 function stopAllSounds() {
@@ -181,8 +242,8 @@ function stopAllSounds() {
 		if (rocks[i].sparseSound)
 			stopSound(rocks[i].sparseSound);
 	}
-	if (drums[0])
-		stopSound(drums[0]);
+//    if (drums[0])
+//        stopSound(drums[0]);
 }
 
 function loadSounds() {
@@ -192,29 +253,34 @@ function loadSounds() {
 	var gotten = 0;
 
 	drums = [];
-	drums.push({url:"sounds/drums_heavy.ogg"});
+//    drums.push({url:"sounds/drums_heavy.ogg"});
 	//drums.push({url:"sounds/behind_the_wall_of_sleep.ogg"});
 
 
-	for (var i in drums) {
-		var drum = drums[i];
-		getSound(drum, function(){gotten++; if (gotten == 11) startAllSounds();});
-	}
+//    for (var i in drums) {
+//        var drum = drums[i];
+//        getSound(drum, function(){gotten++; if (gotten == 11) startAllSounds();});
+//    }
 	
-	rocks[0].busySound = {url:"sounds/track1_heavy.ogg"};
-	rocks[1].busySound = {url:"sounds/track2_heavy.ogg"};
-	rocks[2].busySound = {url:"sounds/track3_heavy.ogg"};
-	rocks[3].busySound = {url:"sounds/track4_heavy.ogg"};
-	rocks[4].busySound = {url:"sounds/track5_heavy.ogg"};
-	rocks[0].sparseSound = {url:"sounds/track1_sparse.ogg"};
-	rocks[1].sparseSound = {url:"sounds/track2_sparse.ogg"};
-	rocks[2].sparseSound = {url:"sounds/track3_sparse.ogg"};
-	rocks[3].sparseSound = {url:"sounds/track4_sparse.ogg"};
-	rocks[4].sparseSound = {url:"sounds/track5_sparse.ogg"};
+	rocks[0].busySound = {url:"sounds/laurie1.ogg"}
+	rocks[1].busySound = {url:"sounds/drums1.ogg"};
+	rocks[2].busySound = {url:"sounds/pad1.ogg"};
+	rocks[3].busySound = {url:"sounds/plink1.ogg"};
+	rocks[4].busySound = {url:"sounds/bass1.ogg"};
+//    rocks[0].sparseSound = {url:"sounds/silence.ogg"};
+//    rocks[1].sparseSound = {url:"sounds/silence.ogg"};
+//    rocks[2].sparseSound = {url:"sounds/silence.ogg"};
+//    rocks[3].sparseSound = {url:"sounds/silence.ogg"};
+//    rocks[4].sparseSound = {url:"sounds/silence.ogg"};
+	rocks[0].sparseSound = {url:"sounds/laurie1.ogg"};
+	rocks[1].sparseSound = {url:"sounds/drums1.ogg"};
+	rocks[2].sparseSound = {url:"sounds/pad1.ogg"};
+	rocks[3].sparseSound = {url:"sounds/plink1.ogg"};
+	rocks[4].sparseSound = {url:"sounds/bass1.ogg"};
 	for (var i in rocks) {
 		var rock = rocks[i];
 		rock.track = {};
-		getSound(rock.busySound, function(){gotten++; if (gotten == 11) startAllSounds();});
-		getSound(rock.sparseSound, function(){gotten++; if (gotten == 11) startAllSounds();});
+		getSound(rock.busySound, function(){gotten++; if (gotten == 10) startAllSounds();});
+		getSound(rock.sparseSound, function(){gotten++; if (gotten == 10) startAllSounds();});
 	}
 }
