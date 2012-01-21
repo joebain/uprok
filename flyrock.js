@@ -16,6 +16,7 @@ var heavyAirFriction = 0.04;
 var airFriction = 0.01;
 var rockJumpGroundAcceleration = {x:0.0025, y:0.002};
 var minRockYVelocity = 50;
+var maxRockYSpeed = 7;
 
 var camera = {x:0, y:0};
 var desiredCamera = {x:0, y:0};
@@ -1022,6 +1023,8 @@ function update(delta)
 		// velocity
 
 		rock.velocity.y += rock.acceleration.y * delta;
+		if (rock.velocity.y < -maxRockYSpeed) rock.velocity.y = -maxRockYSpeed;
+		if (rock.velocity.y > maxRockYSpeed) rock.velocity.y = maxRockYSpeed;
 		rock.velocity.x += rock.acceleration.x * delta;
 		if ( manualControl) {
 			var speed = 50;
