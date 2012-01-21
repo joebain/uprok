@@ -26,31 +26,25 @@ var modFuncs = {
 				   param += rock.track.delayNode.delayTime.minValue;
 				   rock.track.delayNode.delayTime.value = param;
 			   },
+	addWetGain: function(rock, param) {
+					rock.track.wetGainNode.gain.linearRampToValueAtTime(rock.track.wetGainNode.gain.value+((param)*0),audioContext.currentTime);
+//                    rock.track.wetGainNode.gain.value += (param-0.5)*2;
+					if (rock.track.wetGainNode.gain.value <0){
+//                        rock.track.wetGainNode.gain.value = 0;
+						rock.track.wetGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime);
+					}
+					else if (rock.track.wetGainNode.gain.value >1){
+//                        rock.track.wetGainNode.gain.value = 1;
+						rock.track.wetGainNode.gain.linearRampToValueAtTime(1,audioContext.currentTime);
+					}
+			 },
 	wetGain: function(rock, param) {
-//                 rock.track.wetGainNode.gain.value = Math.log(param*(Math.E-1)+1);
-				 rock.track.wetGainNode.gain.value = param*0.8 +0.2;
+//                    rock.track.wetGainNode.gain.value = param;
+					rock.track.wetGainNode.gain.linearRampToValueAtTime(param,audioContext.currentTime);
 			 },
 	invWetGain: function(rock, param) {
 				 rock.track.wetGainNode.gain.value = param;
 			 },
-	sparseSound: function(rock, param) {
-		if (param) {
-			rock.busySound.dryGainNode.gain.value = 0.0;
-			rock.sparseSound.dryGainNode.gain.value = 1.0;
-		} else {
-			rock.busySound.dryGainNode.gain.value = 1.0;
-			rock.sparseSound.dryGainNode.gain.value = 0.0;
-		}
-	},
-	busySound: function(rock, param) {
-		if (param) {
-			rock.busySound.dryGainNode.gain.value = 1.0;
-			rock.sparseSound.dryGainNode.gain.value = 0.0;
-		} else {
-			rock.busySound.dryGainNode.gain.value = 0.0;
-			rock.sparseSound.dryGainNode.gain.value = 1.0;
-		}
-	},
 	justDelay: function(rock, param) {
 		if (param) {
 			if (!rock.track.justDelayTimer) {
@@ -75,7 +69,7 @@ var modFuncs = {
 
 var paramGetters = {
 	velocityY: function(rock) {
-				   return Math.abs(rock.velocity.y) / rock.maxVelocity.y;
+				   return (-rock.velocity.y / rock.maxVelocity.y) / 2 + 0.5;
 			   },
 	velocityX: function(rock) {
 				   return Math.abs(rock.velocity.x) / rock.maxVelocity.y;
@@ -84,10 +78,10 @@ var paramGetters = {
 				  return Math.sqrt(rock.velocity.x*rock.velocity.x+rock.velocity.y*rock.velocity.y) / Math.sqrt(rock.maxVelocity.x*rock.maxVelocity.x+rock.maxVelocity.y*rock.maxVelocity.y);
 			  },
 	positionX: function(rock) {
-				   return (rock.x-viewRect.left) / (viewRect.right-viewRect.left);
+				   return (rock.x-actualViewRect.left) / (actualViewRect.right-actualViewRect.left);
 			   },
 	positionY: function(rock) {
-				   return (rock.y-viewRect.top) / (viewRect.bottom-viewRect.top);
+				   return (rock.y-actualViewRect.top) / (actualViewRect.bottom-actualViewRect.top);
 			   },
 	playersRemaining: function(rock) {
 						  return 1 - (rocks.length-1) / (numberOfRocks-1);
@@ -108,8 +102,11 @@ function adjustSoundForRock(rock) {
 
 	if (rock.track) {
 		if (rock.in) {
-			unMuteSound(rock.track);
-
+//            if (rock.track.wetGainNode.gain.value <= 0) {
+//                console.log("unmuting");
+//                unMuteSound(rock.track);
+//            }
+//            rock.track.wetGainNode.gain.value = 0.0;
 			for (var i in globalMods) {
 				var mod = globalMods[i];
 				if (mod.func && mod.param) {
@@ -122,7 +119,7 @@ function adjustSoundForRock(rock) {
 
 
 		} else {
-			muteSound(rock.track);
+//            muteSound(rock.track);
 		}
 	}
 }
@@ -144,7 +141,7 @@ function getSound(soundObj, success) {
 function createFilters(soundObj) {
 
 	soundObj.wetGainNode = audioContext.createGainNode();
-	soundObj.wetGainNode.gain.value = 1.0;
+	soundObj.wetGainNode.gain.value = 0.0;
 
 	soundObj.filterNode = audioContext.createBiquadFilter();
 	soundObj.filterNode.type = 1;
@@ -193,8 +190,6 @@ function createFilters(soundObj) {
 }
 
 function attachSound(soundObj, otherSoundObj) {
-	if (soundObj.playing) return;
-
 	soundObj.dryGainNode = audioContext.createGainNode();
 	soundObj.dryGainNode.gain.value = 1.0;
 
@@ -204,7 +199,7 @@ function attachSound(soundObj, otherSoundObj) {
 	soundObj.node.loop = true;
 	soundObj.node.buffer = soundObj.buffer;
 	soundObj.node.connect(soundObj.dryGainNode);
-    soundObj.node.noteOn(0);
+	soundObj.node.noteOn(0);
 
 	soundObj.playing = true;
 }
@@ -216,34 +211,63 @@ function stopSound(soundObj) {
 	soundObj.playing = false;
 }
 
-function muteSound(soundObj) {
-	soundObj.wetGainNode.gain.value = 0.0;
+function muteSound(soundObj, time) {
+	console.log("mute sound");
+	if (time === undefined) time = 2;
+	if (soundObj.wetGainNode) {
+		soundObj.wetGainNode.gain.linearRampToValueAtTime(soundObj.wetGainNode.gain.value,audioContext.currentTime);
+		soundObj.wetGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime+time);
+	}
 }
 
-function unMuteSound(soundObj) {
-	soundObj.wetGainNode.gain.value = 1.0;
+function unMuteSound(soundObj, time) {
+	if (time === undefined) time = 2;
+	if (soundObj.wetGainNode) {
+			soundObj.wetGainNode.gain.linearRampToValueAtTime(soundObj.wetGainNode.gain.value,audioContext.currentTime);
+			soundObj.wetGainNode.gain.linearRampToValueAtTime(1.0,audioContext.currentTime+time);
+	}
 }
 
 function startAllSounds() {
 	for (var i in rocks) {
 		createFilters(rocks[i].track);
-		attachSound(rocks[i].busySound, rocks[i].track);
-		attachSound(rocks[i].sparseSound, rocks[i].track);
-		muteSound(rocks[i].track);
+		attachSound(rocks[i].startSound, rocks[i].track);
+		attachSound(rocks[i].midSound, rocks[i].track);
+		muteSound(rocks[i].track, 0);
 	}
-//    createFilters(drums[0]);
-//    attachSound(drums[0], drums[0]);
+	loopSounds();
 	setupControls();
 }
 function stopAllSounds() {
 	for (var i in rocks) {
-		if (rocks[i].sound)
-			stopSound(rocks[i].busySound);
-		if (rocks[i].sparseSound)
-			stopSound(rocks[i].sparseSound);
+		if (rocks[i].startSound)
+			stopSound(rocks[i].startSound);
+		if (rocks[i].midSound)
+			stopSound(rocks[i].midSound);
 	}
-//    if (drums[0])
-//        stopSound(drums[0]);
+}
+
+var loopTimeout;
+function loopSounds() {
+	console.log("rocks in " + rocks.length);
+	for (var r = 0 ; r < rocks.length; r++) {
+//        createFilters(rocks[r].track);
+		if (rocks.length > 3) {
+//            attachSound(rocks[r].startSound, rocks[r].track);
+			rocks[r].startSound.dryGainNode.gain.linearRampToValueAtTime(1,audioContext.currentTime);
+			rocks[r].midSound.dryGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime);
+		} else {
+//            attachSound(rocks[r].midSound, rocks[r].track);
+//            rocks[r].startSound.dryGainNode.gain.value = 0;
+//            rocks[r].midSound.dryGainNode.gain.value = 1;
+			rocks[r].startSound.dryGainNode.gain.linearRampToValueAtTime(rocks[r].startSound.dryGainNode.gain.value,audioContext.currentTime);
+			rocks[r].startSound.dryGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime+1.0);
+
+			rocks[r].midSound.dryGainNode.gain.linearRampToValueAtTime(rocks[r].midSound.dryGainNode.gain.value,audioContext.currentTime);
+			rocks[r].midSound.dryGainNode.gain.linearRampToValueAtTime(1,audioContext.currentTime+1.0);
+		}
+	}
+	loopTimeout = setTimeout(loopSounds,(rocks[0].startSound.buffer.duration)*1000); 
 }
 
 function loadSounds() {
@@ -252,35 +276,20 @@ function loadSounds() {
 
 	var gotten = 0;
 
-	drums = [];
-//    drums.push({url:"sounds/drums_heavy.ogg"});
-	//drums.push({url:"sounds/behind_the_wall_of_sleep.ogg"});
-
-
-//    for (var i in drums) {
-//        var drum = drums[i];
-//        getSound(drum, function(){gotten++; if (gotten == 11) startAllSounds();});
-//    }
-	
-	rocks[0].busySound = {url:"sounds/laurie1.ogg"}
-	rocks[1].busySound = {url:"sounds/drums1.ogg"};
-	rocks[2].busySound = {url:"sounds/pad1.ogg"};
-	rocks[3].busySound = {url:"sounds/plink1.ogg"};
-	rocks[4].busySound = {url:"sounds/bass1.ogg"};
-//    rocks[0].sparseSound = {url:"sounds/silence.ogg"};
-//    rocks[1].sparseSound = {url:"sounds/silence.ogg"};
-//    rocks[2].sparseSound = {url:"sounds/silence.ogg"};
-//    rocks[3].sparseSound = {url:"sounds/silence.ogg"};
-//    rocks[4].sparseSound = {url:"sounds/silence.ogg"};
-	rocks[0].sparseSound = {url:"sounds/laurie1.ogg"};
-	rocks[1].sparseSound = {url:"sounds/drums1.ogg"};
-	rocks[2].sparseSound = {url:"sounds/pad1.ogg"};
-	rocks[3].sparseSound = {url:"sounds/plink1.ogg"};
-	rocks[4].sparseSound = {url:"sounds/bass1.ogg"};
+	rocks[0].startSound = {url:"sounds/laurie_start.ogg"}
+	rocks[1].startSound = {url:"sounds/drums_start.ogg"};
+	rocks[2].startSound = {url:"sounds/pad_start.ogg"};
+	rocks[3].startSound = {url:"sounds/plink_start.ogg"};
+	rocks[4].startSound = {url:"sounds/bass_start.ogg"};
+	rocks[0].midSound = {url:"sounds/laurie_mid.ogg"}
+	rocks[1].midSound = {url:"sounds/drums_mid.ogg"};
+	rocks[2].midSound = {url:"sounds/pad_mid.ogg"};
+	rocks[3].midSound = {url:"sounds/plink_mid.ogg"};
+	rocks[4].midSound = {url:"sounds/bass_mid.ogg"};
 	for (var i in rocks) {
 		var rock = rocks[i];
 		rock.track = {};
-		getSound(rock.busySound, function(){gotten++; if (gotten == 10) startAllSounds();});
-		getSound(rock.sparseSound, function(){gotten++; if (gotten == 10) startAllSounds();});
+		getSound(rock.startSound, function(){gotten++; if (gotten == 10) startAllSounds();});
+		getSound(rock.midSound, function(){gotten++; if (gotten == 10) startAllSounds();});
 	}
 }

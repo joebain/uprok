@@ -425,8 +425,8 @@ function setupControls() {
 					  }}, "autopilot")
 				);
 		})(rock);
-		rockControls.append(makeSlider(rock.busySound.dryGainNode.gain, "busy gain"));
-		rockControls.append(makeSlider(rock.sparseSound.dryGainNode.gain, "sparse gain"));
+		rockControls.append(makeSlider(rock.startSound.dryGainNode.gain, "start gain"));
+		rockControls.append(makeSlider(rock.midSound.dryGainNode.gain, "mid gain"));
 		rockControls.append(makeSlider(rock.track.wetGainNode.gain, "track gain"));
 
 		(function(rock) {
@@ -525,8 +525,8 @@ function loadSettings(settingsString) {
 
 function rock2SoundParams(rock) {
 	var params = {};
-	params.busyGain = rock.busySound.dryGainNode.gain.value;
-	params.sparseGain = rock.sparseSound.dryGainNode.gain.value;
+	params.startGain = rock.startSound.dryGainNode.gain.value;
+//    params.sparseGain = rock.sparseSound.dryGainNode.gain.value;
 	params.wetGain = rock.track.wetGainNode.gain.value;
 	params.filterFrequency = rock.track.filterNode.frequency.value;
 	params.filterResonance = rock.track.filterNode.Q.value;
@@ -536,9 +536,9 @@ function rock2SoundParams(rock) {
 	return params;
 }
 function soundParams2Rock(rock, params) {
-	rock.busySound.dryGainNode.gain.value = params.busyGain;
-	rock.sparseSound.dryGainNode.gain.value = params.sparseGain;
-	rock.track.wetGainNode.gain.value = params.wetGain;
+//    rock.startSound.dryGainNode.gain.value = params.startGain;
+//    rock.sparseSound.dryGainNode.gain.value = params.sparseGain;
+//    rock.track.wetGainNode.gain.value = params.wetGain;
 	rock.track.filterNode.frequency.value = params.filterFrequency;
 	rock.track.filterNode.Q.value = params.filterResonance;
 	rock.track.filterNode.type = params.filterType;
@@ -756,7 +756,7 @@ function run_start(delta) {
 		if (keys[rock.onKey] && rock.local) {
 			joinRock(i, true);
 			if (rock.sound) {
-				unMuteSound(rock.sound);
+				//unMuteSound(rock.sound);
 			}
 		}
 	}
@@ -958,6 +958,7 @@ var yZoom;
 var zoom;
 var tooFar;
 var viewRect;
+var actualViewRect;
 var slowest;
 var i;
 var rock;
@@ -1189,6 +1190,8 @@ function draw() {
 	}
 	screenSize.x = canvasSize.x / worldScale;
 	screenSize.y = canvasSize.y / worldScale;
+
+	actualViewRect = {left: camera.x, top:camera.y, right: camera.x+screenSize.x, bottom: camera.y+screenSize.y};
 
 	context.fillStyle="#ffffff";
 	context.fillRect(0,0,screenSize.x*worldScale, screenSize.y*worldScale);
