@@ -16,7 +16,7 @@ var heavyAirFriction = 0.04;
 var airFriction = 0.01;
 var rockJumpGroundAcceleration = {x:0.0025, y:0.002};
 var minRockYVelocity = 50;
-var maxRockYSpeed = 7;
+var maxRockYSpeed = 5;
 
 var camera = {x:0, y:0};
 var desiredCamera = {x:0, y:0};
@@ -29,7 +29,8 @@ var groundPoints = 300000;
 var levelSize = {x:groundPoints*pointSpacing, y:screenSize.y * 1000};
 
 var cameraTracking = 0.2;
-var cameraZooming = 0.1;
+var cameraZoomingOut = 0.3;
+var cameraZoomingIn = 0.001;
 var cameraBorder = 0.15;
 var minWorldScale = 0.2;
 var maxWorldScale = 0.7;
@@ -980,7 +981,7 @@ function update(delta)
 			change_state(game_end);
 		}
 	}
-
+//    rocks[0].autopilot = false;
 	for (i in rocks) {
 		rock = rocks[i];
 
@@ -1074,7 +1075,7 @@ function update(delta)
 		adjustSoundForRock(rock);
 	}
 
-	if (ticker % 5 == 0) {
+	if (ticker % 2 == 0) {
 		rockTrailPointer++;
 		if (rockTrailPointer >= rockTrailLength) {
 			rockTrailPointer = 0;
@@ -1171,7 +1172,11 @@ function removeRock(i) {
 
 function draw() {
 	if (mode == game_play) {
-		worldScale = worldScale*(1-cameraZooming) + desiredWorldScale*cameraZooming;
+		if (desiredWorldScale < worldScale) {
+			worldScale = worldScale*(1-cameraZoomingOut) + desiredWorldScale*cameraZoomingOut;
+		} else {
+			worldScale = worldScale*(1-cameraZoomingIn) + desiredWorldScale*cameraZoomingIn;
+		}
 
 		camera.x = camera.x*(1-cameraTracking) + desiredCamera.x*cameraTracking;
 		camera.y = camera.y*(1-cameraTracking) + desiredCamera.y*cameraTracking;

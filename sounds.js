@@ -47,22 +47,27 @@ var modFuncs = {
 			 },
 	justDelay: function(rock, param) {
 		if (param) {
-			if (!rock.track.justDelayTimer) {
-				rock.track.justDelayTimer = setTimeout(function() {
-					rock.track.justDelayInGainNode.gain.value = 0.0;
-				}, 500);
-				rock.track.justDelayNode.delayTime.value = 0.5;
-				rock.track.justDelayInGainNode.gain.value = 1.0;
-				rock.track.justDelayOutGainNode.gain.value = 1.0;
-				rock.track.notJustDelayGainNode.gain.value = 0.0;
+			if (!rock.track.justDelayNode.timer) {
+				rock.track.justDelayNode.timer = setTimeout(function() {
+					rock.track.justDelayOutGainNode.gain.value = 0.0;
+					rock.track.justDelayInGainNode.gain.value = 1.0;
+					rock.track.notJustDelayGainNode.gain.value = 1.0;
+					rock.track.justDelayFeedbackGainNode.gain.value = 0.0;
+					delete rock.track.justDelayNode.timer;
+				}, 200);
 			}
+			rock.track.justDelayNode.delayTime.value = 0.2;
+			rock.track.justDelayInGainNode.gain.value = 0.0;
+			rock.track.justDelayOutGainNode.gain.value = 1.0;
+			rock.track.notJustDelayGainNode.gain.value = 0.0;
+			rock.track.justDelayFeedbackGainNode.gain.value = 1.0;
 		} else {
-			if (rock.track.justDelayTimer) {
-				clearTimeout(rock.track.justDelayTimer);
-				delete rock.track.justDelayTimer;
+			if (!rock.track.justDelayNode.timer) {
+				rock.track.justDelayOutGainNode.gain.value = 0.0;
+				rock.track.justDelayInGainNode.gain.value = 1.0;
+				rock.track.notJustDelayGainNode.gain.value = 1.0;
+				rock.track.justDelayFeedbackGainNode.gain.value = 0.0;
 			}
-			rock.track.justDelayOutGainNode.gain.value = 0.0;
-			rock.track.notJustDelayGainNode.gain.value = 1.0;
 		}
 	}
 };
@@ -140,6 +145,9 @@ function getSound(soundObj, success) {
 
 function createFilters(soundObj) {
 
+	soundObj.dryGainNode = audioContext.createGainNode();
+	soundObj.dryGainNode.gain.value = 1.0;
+
 	soundObj.wetGainNode = audioContext.createGainNode();
 	soundObj.wetGainNode.gain.value = 0.0;
 
@@ -161,6 +169,8 @@ function createFilters(soundObj) {
 	soundObj.justDelayNode.delayTime = 0.5;
 	soundObj.justDelayInGainNode = audioContext.createGainNode();
 	soundObj.justDelayInGainNode.gain.value = 1.0;
+	soundObj.justDelayFeedbackGainNode = audioContext.createGainNode();
+	soundObj.justDelayFeedbackGainNode.gain.value = 0.0;
 	soundObj.justDelayOutGainNode = audioContext.createGainNode();
 	soundObj.justDelayOutGainNode.gain.value = 0.0;
 	soundObj.notJustDelayGainNode = audioContext.createGainNode();
@@ -169,22 +179,25 @@ function createFilters(soundObj) {
 	soundObj.delayGainNode.connect(soundObj.delayNode);
 	soundObj.delayNode.connect(soundObj.delayGainNode);
 
-	soundObj.delayNode.connect(soundObj.justDelayInGainNode);
-	soundObj.delayNode.connect(soundObj.notJustDelayGainNode);
+	soundObj.delayNode.connect(soundObj.wetGainNode);
 	
+	soundObj.dryGainNode.connect(soundObj.justDelayInGainNode);
+	soundObj.dryGainNode.connect(soundObj.notJustDelayGainNode);
+
 	soundObj.justDelayInGainNode.connect(soundObj.justDelayNode);
-	soundObj.justDelayNode.connect(soundObj.justDelayInGainNode);
+	soundObj.justDelayNode.connect(soundObj.justDelayFeedbackGainNode);
+	soundObj.justDelayFeedbackGainNode.connect(soundObj.justDelayNode);
 	soundObj.justDelayNode.connect(soundObj.justDelayOutGainNode);
 
-	soundObj.justDelayOutGainNode.connect(soundObj.wetGainNode);
-	soundObj.notJustDelayGainNode.connect(soundObj.wetGainNode);
+	soundObj.justDelayOutGainNode.connect(soundObj.delayNode);
+	soundObj.notJustDelayGainNode.connect(soundObj.delayNode);
 
 	soundObj.filterNode.connect(soundObj.filterGainNode);
 	soundObj.filterGainNode.connect(soundObj.delayNode);
 
 	soundObj.wetGainNode.connect(audioContext.destination);
 
-	soundObj.inputNode = soundObj.delayNode;
+	soundObj.inputNode = soundObj.dryGainNode;
 //    soundObj.inputNode = soundObj.filterNode;
 
 }
@@ -278,12 +291,12 @@ function loadSounds() {
 
 	rocks[0].startSound = {url:"sounds/laurie_start.ogg"}
 	rocks[1].startSound = {url:"sounds/drums_start.ogg"};
-	rocks[2].startSound = {url:"sounds/pad_start.ogg"};
+	rocks[2].startSound = {url:"sounds/adrums_start.ogg"};
 	rocks[3].startSound = {url:"sounds/plink_start.ogg"};
 	rocks[4].startSound = {url:"sounds/bass_start.ogg"};
 	rocks[0].midSound = {url:"sounds/laurie_mid.ogg"}
 	rocks[1].midSound = {url:"sounds/drums_mid.ogg"};
-	rocks[2].midSound = {url:"sounds/pad_mid.ogg"};
+	rocks[2].midSound = {url:"sounds/adrums_mid.ogg"};
 	rocks[3].midSound = {url:"sounds/plink_mid.ogg"};
 	rocks[4].midSound = {url:"sounds/bass_mid.ogg"};
 	for (var i in rocks) {
