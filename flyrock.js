@@ -15,8 +15,10 @@ var groundFriction = {x:0.02, y:0.01};
 var heavyAirFriction = 0.04;
 var airFriction = 0.01;
 var rockJumpGroundAcceleration = {x:0.0025, y:0.002};
-var minRockYVelocity = 50;
 var maxRockYSpeed = 5;
+var minRockYSpeed = 2;
+var gameDeclineTime = 50000;
+var rockSpeedIncreasePerSecond = 0.000000006;
 
 var camera = {x:0, y:0};
 var desiredCamera = {x:0, y:0};
@@ -679,6 +681,9 @@ function startingGrid() {
 		rock.velocity = {x:0, y:0};
 		rock.acceleration = {x:0, y:0};
 		rock.trail = [];
+		for (var t = 0 ; t < rockTrailLength ; t++) {
+			rock.trail[t] = {x:0, y:0, underGround:false};
+		}
 		rock.force = {x:0, y:0};
 		rock.maxVelocity = {x:0, y:0};
 		rock.in = false;
@@ -837,6 +842,7 @@ function run_start(delta) {
 		doingRaceCountDown = true;
 		flashed1 = false;
 		flashed2 = false;
+		startTime = new Date();
 		do {
 			var foundOne = false;
 			for (var i in rocks) {
@@ -1000,8 +1006,12 @@ var actualViewRect;
 var slowest;
 var i;
 var rock;
+var currentMaxYSpeed;
+var gameTime;
+var startTime;
 function update(delta)
 {
+	gameTime = new Date()-startTime;
 
 	viewRect = {top:Number.MAX_VALUE, bottom:0, left:Number.MAX_VALUE, right:0};
 
@@ -1049,7 +1059,7 @@ function update(delta)
 		rock.acceleration.y = -gravity;
 			rock.acceleration.x += -rock.force.x * groundFriction.x;
 			if (rock.on) {
-				rock.acceleration.x += rockJumpGroundAcceleration.x*rock.speed;
+				rock.acceleration.x += (rockJumpGroundAcceleration.x + rockSpeedIncreasePerSecond*gameTime)*rock.speed;
 				rock.acceleration.y -= rockJumpGroundAcceleration.y;
 			}
 		} else {
@@ -1062,8 +1072,11 @@ function update(delta)
 		// velocity
 
 		rock.velocity.y += rock.acceleration.y * delta;
-		if (rock.velocity.y < -maxRockYSpeed) rock.velocity.y = -maxRockYSpeed;
-		if (rock.velocity.y > maxRockYSpeed) rock.velocity.y = maxRockYSpeed;
+		currentMaxYSpeed = maxRockYSpeed - (gameTime/gameDeclineTime);
+		console.log(currentMaxYSpeed);
+		if (currentMaxYSpeed < minRockYSpeed) currentMaxYSpeed = minRockYSpeed;
+		if (rock.velocity.y < -currentMaxYSpeed) rock.velocity.y = -currentMaxYSpeed;
+		if (rock.velocity.y > currentMaxYSpeed) rock.velocity.y = currentMaxYSpeed;
 		rock.velocity.x += rock.acceleration.x * delta;
 		if ( manualControl) {
 			var speed = 50;
