@@ -55,6 +55,7 @@ var modFuncs = {
 					rock.track.justDelayInGainNode.gain.value = 1.0;
 					rock.track.notJustDelayGainNode.gain.value = 1.0;
 					rock.track.justDelayFeedbackGainNode.gain.value = 0.0;
+					rock.track.justDelayNode.delayTime.value = 0.2;
 					delete rock.track.justDelayNode.timer;
 				}, 400);
 			}
@@ -65,6 +66,7 @@ var modFuncs = {
 			rock.track.justDelayFeedbackGainNode.gain.value = 1.0;
 		} else {
 			if (!rock.track.justDelayNode.timer) {
+				rock.track.justDelayNode.delayTime.value = 0.2;
 				rock.track.justDelayOutGainNode.gain.value = 0.0;
 				rock.track.justDelayInGainNode.gain.value = 1.0;
 				rock.track.notJustDelayGainNode.gain.value = 1.0;

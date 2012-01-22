@@ -1027,9 +1027,9 @@ function update(delta)
 			change_state(game_end);
 		}
 	}
-	if (rocks[0].originalNumber === 0) {
-		rocks[0].autopilot = false;
-	}
+//    if (rocks[0].originalNumber === 0) {
+//        rocks[0].autopilot = false;
+//    }
 	for (i in rocks) {
 		rock = rocks[i];
 
