@@ -255,16 +255,30 @@ function makeSlider(audioParams, name) {
 	var gainBox = $("<div>");
 
 	var gainControl = $("<input type='hidden'>");
-	gainControl.val((audioParam.value/(audioParam.maxValue-audioParam.minValue))*100);
+	var value;
+	if (typeof audioParam.value === "function") {
+		value = audioParam.value();
+	} else {
+		value = audioParam.value;
+	}
+	gainControl.val((value/(audioParam.maxValue-audioParam.minValue))*100);
 	gainBox.append(gainControl);
 	gainControl.PPSlider({width:300, name:name, hideTooltip:true, onChanged: function(e) {
 		if (audioParams.length) {
 			for (var i in audioParams) {
 				var anAudioParam = audioParams[i];
-				anAudioParam.value = (parseInt(gainControl.val())/100)*(anAudioParam.maxValue-anAudioParam.minValue);
+				if (typeof anAudioParam.value === "function") {
+					anAudioParam.value((parseInt(gainControl.val())/100)*(anAudioParam.maxValue-anAudioParam.minValue));
+				} else {
+					anAudioParam.value = (parseInt(gainControl.val())/100)*(anAudioParam.maxValue-anAudioParam.minValue);
+				}
 			}
 		} else {
-			audioParam.value = (parseInt(gainControl.val())/100)*(audioParam.maxValue-audioParam.minValue);
+			if (typeof audioParam.value === "function") {
+				audioParam.value((parseInt(gainControl.val())/100)*(audioParam.maxValue-audioParam.minValue));
+			} else {
+				audioParam.value = (parseInt(gainControl.val())/100)*(audioParam.maxValue-audioParam.minValue);
+			}
 		}
 	}});
 
@@ -467,6 +481,21 @@ function setupControls() {
 
 		rockControls.append(makeSlider(rock.track.delayNode.delayTime));
 		rockControls.append(makeSlider(rock.track.delayGainNode.gain, "delay feedback"));
+		(function(rock){
+			var filterNumberObj = {
+				value: function(value) {
+					if (value) {
+						rock.magicFilterNumber = value;
+					} else {
+						return rock.magicFilterNumber;
+					}
+				},
+				minValue: 0.0,
+				maxValue: 1.2,
+				defaultValue: 0.8,
+			};
+			rockControls.append(makeSlider(filterNumberObj, "magic filter number"));
+		})(rock);
 
 		controlDiv.append(surroundBox);
 	}
@@ -535,6 +564,7 @@ function rock2SoundParams(rock) {
 	params.filterType = rock.track.filterNode.type;
 	params.delayTime = rock.track.delayNode.delayTime.value;
 	params.delayFeedback = rock.track.delayGainNode.gain.value;
+	params.magicFilterNumber = rock.magicFilterNumber;
 	return params;
 }
 function soundParams2Rock(rock, params) {
@@ -546,6 +576,7 @@ function soundParams2Rock(rock, params) {
 	rock.track.filterNode.type = params.filterType;
 	rock.track.delayNode.delayTime.value = params.delayTime;
 	rock.track.delayGainNode.gain.value = params.delayFeedback;
+	rock.magicFilterNumber = params.magicFilterNumber;
 }
 
 function gameStart(data) {
@@ -617,6 +648,7 @@ function startingGrid() {
 		rocks[i].player_id = -1;
 		rocks[i].local = false;
 		rocks[i].autopilot = false;
+		rocks[i].magicFilterNumber = 0.8;
 		rockMap[i] = rocks[i];
 	}
 
@@ -925,7 +957,11 @@ function updateSliders() {
 		if (slider.param.length) {
 			//slider.slider.setValue((slider.param[0].value/(slider.param[0].maxValue-slider.param[0].minValue))*100);
 		} else {
-			slider.slider.setValue((slider.param.value/(slider.param.maxValue-slider.param.minValue))*100);
+			if (typeof slider.param.value === "function") {
+				slider.slider.setValue((slider.param.value()/(slider.param.maxValue-slider.param.minValue))*100);
+			} else {
+				slider.slider.setValue((slider.param.value/(slider.param.maxValue-slider.param.minValue))*100);
+			}
 		}
 	});
 }
@@ -981,7 +1017,9 @@ function update(delta)
 			change_state(game_end);
 		}
 	}
-//    rocks[0].autopilot = false;
+	if (rocks[0].originalNumber === 0) {
+		rocks[0].autopilot = false;
+	}
 	for (i in rocks) {
 		rock = rocks[i];
 

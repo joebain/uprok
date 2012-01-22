@@ -1,9 +1,13 @@
 var modFuncs = {
 	filterFrequency: function(rock, param) {
 						 if (rock.track.filterNode.type === 0) { // low pass
-							 rock.track.filterGainNode.gain.value = 1-Math.log(param*(Math.E-1)+1);
+//                             rock.track.filterGainNode.gain.value = 1-Math.log(param*(Math.E-1)+1);
 							 param *= 0.25;//rock.track.filterNode.mod.value;
-							 param += 0.7;//(1-rock.track.filterNode.mod.value);
+							 if (rock.magicFilterNumber) {
+								 param += rock.magicFilterNumber;
+							 } else {
+								 param += 0.8;//(1-rock.track.filterNode.mod.value);
+							 }
 							 rock.track.filterNode.frequency.value = Math.pow(2, param*10);
 						 } else {
 							 rock.track.filterNode.frequency.value = param * (rock.track.filterNode.frequency.maxValue - rock.track.filterNode.frequency.minValue) + rock.track.filterNode.frequency.minValue;
@@ -15,6 +19,11 @@ var modFuncs = {
 						 param += rock.track.filterNode.Q.minValue;
 						 rock.track.filterNode.Q.value = param;
 					 },
+	filterOn: function(rock, param) {
+//        param = param>0 ? 1 : 0;
+		rock.track.filterGainNode.gain.value = param;
+		rock.track.notFilterGainNode.gain.value = 1.0-param;
+	},
 	delayFeedback: function(rock, param) {
 					   param *= 0.7; // dont want too much
 					   param *= (rock.track.delayGainNode.gain.maxValue-rock.track.delayGainNode.gain.minValue);
@@ -26,18 +35,11 @@ var modFuncs = {
 				   param += rock.track.delayNode.delayTime.minValue;
 				   rock.track.delayNode.delayTime.value = param;
 			   },
-	addWetGain: function(rock, param) {
-					rock.track.wetGainNode.gain.linearRampToValueAtTime(rock.track.wetGainNode.gain.value+((param)*0),audioContext.currentTime);
-//                    rock.track.wetGainNode.gain.value += (param-0.5)*2;
-					if (rock.track.wetGainNode.gain.value <0){
-//                        rock.track.wetGainNode.gain.value = 0;
-						rock.track.wetGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime);
-					}
-					else if (rock.track.wetGainNode.gain.value >1){
-//                        rock.track.wetGainNode.gain.value = 1;
-						rock.track.wetGainNode.gain.linearRampToValueAtTime(1,audioContext.currentTime);
-					}
-			 },
+	delayOn: function(rock, param) {
+//        param = param >0 ?1:0;
+		rock.track.delayOutGainNode.gain.value = param;
+//        rock.track.notDelayGainNode.gain.value = 1-param;
+	},
 	wetGain: function(rock, param) {
 //                    rock.track.wetGainNode.gain.value = param;
 					rock.track.wetGainNode.gain.linearRampToValueAtTime(param,audioContext.currentTime);
@@ -54,7 +56,7 @@ var modFuncs = {
 					rock.track.notJustDelayGainNode.gain.value = 1.0;
 					rock.track.justDelayFeedbackGainNode.gain.value = 0.0;
 					delete rock.track.justDelayNode.timer;
-				}, 200);
+				}, 400);
 			}
 			rock.track.justDelayNode.delayTime.value = 0.2;
 			rock.track.justDelayInGainNode.gain.value = 0.0;
@@ -74,7 +76,7 @@ var modFuncs = {
 
 var paramGetters = {
 	velocityY: function(rock) {
-				   return (-rock.velocity.y / rock.maxVelocity.y) / 2 + 0.5;
+				   return Math.abs(rock.velocity.y / rock.maxVelocity.y);
 			   },
 	velocityX: function(rock) {
 				   return Math.abs(rock.velocity.x) / rock.maxVelocity.y;
@@ -157,13 +159,25 @@ function createFilters(soundObj) {
 	soundObj.filterNode.frequency.value = 126;
 	soundObj.filterNode.mod = {value:0.2, minValue:0, maxValue:1, name:"mod"};
 	soundObj.filterGainNode = audioContext.createGainNode();
-	soundObj.filterGainNode.gain.value = 1;
+	soundObj.filterGainNode.gain.value = 0.0;
+	soundObj.notFilterGainNode = audioContext.createGainNode();
+	soundObj.notFilterGainNode.gain.value = 1.0;
+
+	soundObj.reverbNode = audioContext.createConvolver();
+//    soundObj.reverbNode.buffer = ;
+	soundObj.reverbGainNode = audioContext.createGainNode();
+	soundObj.reverbGainNode.gain.value = 0.0;
+	soundObj.notReverbGainNode = audioContext.createGainNode();
+	soundObj.notReverbGainNode.gain.value = 1.0;
 
 	soundObj.delayNode = audioContext.createDelayNode();
 	soundObj.delayNode.delayTime.value = 0.0;
-
 	soundObj.delayGainNode = audioContext.createGainNode();
 	soundObj.delayGainNode.gain.value = 0.0;
+	soundObj.delayOutGainNode = audioContext.createGainNode();
+	soundObj.delayOutGainNode.gain.value = 0.0;
+	soundObj.notDelayGainNode = audioContext.createGainNode();
+	soundObj.notDelayGainNode.gain.value = 1.0;
 
 	soundObj.justDelayNode = audioContext.createDelayNode();
 	soundObj.justDelayNode.delayTime = 0.5;
@@ -176,30 +190,55 @@ function createFilters(soundObj) {
 	soundObj.notJustDelayGainNode = audioContext.createGainNode();
 	soundObj.notJustDelayGainNode.gain.value = 1.0;
 
-	soundObj.delayGainNode.connect(soundObj.delayNode);
-	soundObj.delayNode.connect(soundObj.delayGainNode);
 
-	soundObj.delayNode.connect(soundObj.wetGainNode);
-	
-	soundObj.dryGainNode.connect(soundObj.justDelayInGainNode);
-	soundObj.dryGainNode.connect(soundObj.notJustDelayGainNode);
-
+	// set up the individual effect routings
+	//set up the hard delay
 	soundObj.justDelayInGainNode.connect(soundObj.justDelayNode);
 	soundObj.justDelayNode.connect(soundObj.justDelayFeedbackGainNode);
 	soundObj.justDelayFeedbackGainNode.connect(soundObj.justDelayNode);
 	soundObj.justDelayNode.connect(soundObj.justDelayOutGainNode);
+	
+	//set up the soft delay
+	soundObj.delayGainNode.connect(soundObj.delayNode);
+	soundObj.delayNode.connect(soundObj.delayGainNode);
+	soundObj.delayNode.connect(soundObj.delayOutGainNode);
 
+	//set up the filter
+	soundObj.filterNode.connect(soundObj.filterGainNode);
+
+	// set up the routings for the whole graph
+	
+	// start at the dry gain
+	soundObj.inputNode = soundObj.dryGainNode;
+
+	// first the hard delay
+	soundObj.dryGainNode.connect(soundObj.justDelayInGainNode);
+	soundObj.dryGainNode.connect(soundObj.notJustDelayGainNode);
+
+	// the hard delay goes to the soft delay
 	soundObj.justDelayOutGainNode.connect(soundObj.delayNode);
 	soundObj.notJustDelayGainNode.connect(soundObj.delayNode);
+	soundObj.justDelayOutGainNode.connect(soundObj.notDelayGainNode);
+	soundObj.notJustDelayGainNode.connect(soundObj.notDelayGainNode);
 
-	soundObj.filterNode.connect(soundObj.filterGainNode);
-	soundObj.filterGainNode.connect(soundObj.delayNode);
+	// the soft delay goes to the reverb
+	soundObj.delayOutGainNode.connect(soundObj.reverbNode);
+	soundObj.delayOutGainNode.connect(soundObj.notReverbGainNode);
+	soundObj.notDelayGainNode.connect(soundObj.reverbNode);
+	soundObj.notDelayGainNode.connect(soundObj.notReverbGainNode);
 
+	// the reverb goed to the filter
+	soundObj.reverbGainNode.connect(soundObj.notFilterGainNode);
+	soundObj.reverbGainNode.connect(soundObj.filterNode);
+	soundObj.notReverbGainNode.connect(soundObj.notFilterGainNode);
+	soundObj.notReverbGainNode.connect(soundObj.filterNode);
+
+	// the filter goes to the final wet gain
+	soundObj.notFilterGainNode.connect(soundObj.wetGainNode);
+	soundObj.filterGainNode.connect(soundObj.wetGainNode);
+
+	// the wet gain goes out
 	soundObj.wetGainNode.connect(audioContext.destination);
-
-	soundObj.inputNode = soundObj.dryGainNode;
-//    soundObj.inputNode = soundObj.filterNode;
-
 }
 
 function attachSound(soundObj, otherSoundObj) {
@@ -219,8 +258,7 @@ function attachSound(soundObj, otherSoundObj) {
 
 function stopSound(soundObj) {
 	if (!soundObj.playing) return;
-	if (soundObj.playingTimeout) clearTimeout(soundObj.playingTimeout);
-	soundObj.noteOff(0);
+	soundObj.node.noteOff(0);
 	soundObj.playing = false;
 }
 
@@ -264,15 +302,10 @@ var loopTimeout;
 function loopSounds() {
 	console.log("rocks in " + rocks.length);
 	for (var r = 0 ; r < rocks.length; r++) {
-//        createFilters(rocks[r].track);
 		if (rocks.length > 3) {
-//            attachSound(rocks[r].startSound, rocks[r].track);
 			rocks[r].startSound.dryGainNode.gain.linearRampToValueAtTime(1,audioContext.currentTime);
 			rocks[r].midSound.dryGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime);
 		} else {
-//            attachSound(rocks[r].midSound, rocks[r].track);
-//            rocks[r].startSound.dryGainNode.gain.value = 0;
-//            rocks[r].midSound.dryGainNode.gain.value = 1;
 			rocks[r].startSound.dryGainNode.gain.linearRampToValueAtTime(rocks[r].startSound.dryGainNode.gain.value,audioContext.currentTime);
 			rocks[r].startSound.dryGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime+1.0);
 
