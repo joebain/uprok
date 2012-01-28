@@ -259,9 +259,25 @@ function attachSound(soundObj, otherSoundObj) {
 }
 
 function stopSound(soundObj) {
-	if (!soundObj.playing) return;
+//    if (!soundObj.playing) return;
 	soundObj.node.noteOff(0);
 	soundObj.playing = false;
+}
+
+function muteAllSounds(oldRocks, time) {
+	var rocks = rocks;
+	if (oldRocks) {
+		rocks = oldRocks;
+	}
+	for (var i in rocks) {
+		if (!rocks[i]) continue;
+		if (time === undefined) time = 2;
+
+		if (rocks[i].track.wetGainNode) {
+			rocks[i].track.wetGainNode.gain.linearRampToValueAtTime(rocks[i].track.wetGainNode.gain.value,audioContext.currentTime);
+			rocks[i].track.wetGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime+time);
+		}
+	}
 }
 
 function muteSound(soundObj, time) {
@@ -286,33 +302,54 @@ function startAllSounds() {
 		createFilters(rocks[i].track);
 		attachSound(rocks[i].startSound, rocks[i].track);
 		attachSound(rocks[i].midSound, rocks[i].track);
+		attachSound(rocks[i].endSound, rocks[i].track);
 		muteSound(rocks[i].track, 0);
 	}
 	loopSounds();
 	setupControls();
 }
-function stopAllSounds() {
+function stopAllSounds(oldRocks) {
+	var rocks = rocks;
+	if (oldRocks) {
+		rocks = oldRocks;
+	}
 	for (var i in rocks) {
+		if (!rocks[i]) continue;
 		if (rocks[i].startSound)
 			stopSound(rocks[i].startSound);
 		if (rocks[i].midSound)
 			stopSound(rocks[i].midSound);
+		if (rocks[i].endSound)
+			stopSound(rocks[i].endSound);
 	}
 }
 
 var loopTimeout;
+var fadeTime = 0.1;
 function loopSounds() {
-	console.log("rocks in " + rocks.length);
 	for (var r = 0 ; r < rocks.length; r++) {
-		if (rocks.length > 3) {
-			rocks[r].startSound.dryGainNode.gain.linearRampToValueAtTime(1,audioContext.currentTime);
-			rocks[r].midSound.dryGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime);
-		} else {
+		if (rocks.length <= 2) {
 			rocks[r].startSound.dryGainNode.gain.linearRampToValueAtTime(rocks[r].startSound.dryGainNode.gain.value,audioContext.currentTime);
-			rocks[r].startSound.dryGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime+1.0);
+			rocks[r].startSound.dryGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime+fadeTime);
+
+			rocks[r].midSound.dryGainNode.gain.linearRampToValueAtTime(rocks[r].startSound.dryGainNode.gain.value,audioContext.currentTime);
+			rocks[r].midSound.dryGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime+fadeTime);
+
+			rocks[r].endSound.dryGainNode.gain.linearRampToValueAtTime(rocks[r].midSound.dryGainNode.gain.value,audioContext.currentTime);
+			rocks[r].endSound.dryGainNode.gain.linearRampToValueAtTime(1,audioContext.currentTime+fadeTime);
+		} else if (rocks.length <= 3) {
+			rocks[r].startSound.dryGainNode.gain.linearRampToValueAtTime(rocks[r].startSound.dryGainNode.gain.value,audioContext.currentTime);
+			rocks[r].startSound.dryGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime+fadeTime);
 
 			rocks[r].midSound.dryGainNode.gain.linearRampToValueAtTime(rocks[r].midSound.dryGainNode.gain.value,audioContext.currentTime);
-			rocks[r].midSound.dryGainNode.gain.linearRampToValueAtTime(1,audioContext.currentTime+1.0);
+			rocks[r].midSound.dryGainNode.gain.linearRampToValueAtTime(1,audioContext.currentTime+fadeTime);
+
+			rocks[r].endSound.dryGainNode.gain.linearRampToValueAtTime(rocks[r].midSound.dryGainNode.gain.value,audioContext.currentTime);
+			rocks[r].endSound.dryGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime+fadeTime);
+		} else {
+			rocks[r].startSound.dryGainNode.gain.linearRampToValueAtTime(1,audioContext.currentTime);
+			rocks[r].midSound.dryGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime);
+			rocks[r].endSound.dryGainNode.gain.linearRampToValueAtTime(0,audioContext.currentTime);
 		}
 	}
 	loopTimeout = setTimeout(loopSounds,(rocks[0].startSound.buffer.duration)*1000); 
@@ -334,10 +371,16 @@ function loadSounds() {
 	rocks[2].midSound = {url:"sounds/adrums_mid.ogg"};
 	rocks[3].midSound = {url:"sounds/plink_mid.ogg"};
 	rocks[4].midSound = {url:"sounds/bass_mid.ogg"};
+	rocks[0].endSound = {url:"sounds/laurie_end.ogg"}
+	rocks[1].endSound = {url:"sounds/drums_end.ogg"};
+	rocks[2].endSound = {url:"sounds/adrums_end.ogg"};
+	rocks[3].endSound = {url:"sounds/plink_end.ogg"};
+	rocks[4].endSound = {url:"sounds/bass_end.ogg"};
 	for (var i in rocks) {
 		var rock = rocks[i];
 		rock.track = {};
-		getSound(rock.startSound, function(){gotten++; if (gotten == 10) startAllSounds();});
-		getSound(rock.midSound, function(){gotten++; if (gotten == 10) startAllSounds();});
+		getSound(rock.startSound, function(){gotten++; if (gotten == 15) startAllSounds();});
+		getSound(rock.midSound, function(){gotten++; if (gotten == 15) startAllSounds();});
+		getSound(rock.endSound, function(){gotten++; if (gotten == 15) startAllSounds();});
 	}
 }

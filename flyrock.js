@@ -50,6 +50,8 @@ var rocktrailWidth = 0.06;
 var terminalYVel = 10;
 
 var rocks = [];
+var oldRocks = [];
+var localRockScores = [];
 var originalRocks = [];
 var numberOfRocks = 5;
 var localRocks = [];
@@ -80,10 +82,6 @@ var game_end = 3;
 var pause = false;
 var manualControl = false;
 
-var startMessage;
-var startCountElement;
-var startCountElementTwo;
-
 var gameChoiceDiv;
 var gameChoiceLocal;
 var gameChoiceRemote;
@@ -101,6 +99,8 @@ var updateSlidersParam = {value:false, name:"update sliders"};
 var previousSessionSettings;
 
 function init() {
+	canvasSize.x = $(document).width();
+	canvasSize.y = $(document).height();
 	var canvas = document.getElementById("canvas");
 	    canvas.height = canvasSize.y;
 	    canvas.width = canvasSize.x;
@@ -111,24 +111,21 @@ function init() {
 	window.onkeyup = keysup;
 	window.onmousemove = mousemove;
 
-	startMessage = document.getElementById("startMessage");
-	startCountElement = document.getElementById("startCount");
-	startCountElementTwo = document.getElementById("startCountTwo");
 
 
-	gameChoiceDiv = document.getElementById("gameChoice");
-	gameChoiceLocal = document.getElementById("localChoice");
-	gameChoiceLocal.onclick = chooseLocal;
-	gameChoiceRemote = document.getElementById("remoteChoice");
-	gameChoiceRemote.onclick = chooseRemote;
+//    gameChoiceDiv = document.getElementById("gameChoice");
+//    gameChoiceLocal = document.getElementById("localChoice");
+//    gameChoiceLocal.onclick = chooseLocal;
+//    gameChoiceRemote = document.getElementById("remoteChoice");
+//    gameChoiceRemote.onclick = chooseRemote;
 
-	playerChoiceDiv = document.getElementById("playerNumberChoice");
-	for (var i = 1 ; i <= numberOfRocks ; i++) {
-		playerChoice[i] = document.getElementById(i+"player");
-		(function(i) {
-			playerChoice[i].onclick = function() {choosePlayers(i);}
-		})(i);
-	}
+//    playerChoiceDiv = document.getElementById("playerNumberChoice");
+//    for (var i = 1 ; i <= numberOfRocks ; i++) {
+//        playerChoice[i] = document.getElementById(i+"player");
+//        (function(i) {
+//            playerChoice[i].onclick = function() {choosePlayers(i);}
+//        })(i);
+//    }
 
 //    try {
 //        socket = io.connect('http://127.0.0.1:1337');
@@ -435,7 +432,7 @@ function setupControls() {
 		(function(rock) {
 			rockControls.append(makeToggle({
 				value:function(value) {
-						  if (value) {
+						  if (value === undefined) {
 							  rock.autopilot = value;
 						  } else {
 							  return rock.autopilot;
@@ -590,13 +587,10 @@ function handleNews(data) {
 
 function chooseRemote() {
 	console.log("remote game");
-	gameChoiceDiv.style.display = "none";
-	playerChoiceDiv.style.display = "";
 	gameIsLocal = false;
 }
 function chooseLocal() {
 	console.log("local game");
-	gameChoiceDiv.style.display = "none";
 	gameIsLocal = true;
 	for (var i = 0 ; i < numberOfRocks ; i++) {
 		if (!rocks[i].local) {
@@ -607,7 +601,6 @@ function chooseLocal() {
 function setLocalPlayer(i) {
 	var rock = rocks[i];
 	rock.local = true;
-	rock.startLogoElement.style.color = "#ffffff";
 }
 
 function confirmPlayers(players) {
@@ -630,6 +623,10 @@ function updatePlayers(players) {
 
 function startingGrid() {
 	for (var i = 0 ; i < numberOfRocks ; i++) {
+		if (!localRockScores[i]) {
+			localRockScores[i] = 0;
+		}
+		oldRocks[i] = rocks[i];
 		rocks[i] = {};
 		rocks[i].x = pointSpacing * 2;
 		rocks[i].y = 300;
@@ -654,19 +651,28 @@ function startingGrid() {
 		rockMap[i] = rocks[i];
 	}
 
-	rocks[0].onKey = 90;//z
-	rocks[1].onKey = 67;//c
-	rocks[2].onKey = 88;//x
-	rocks[3].onKey = 78;//n
-	rocks[4].onKey = 66;//b
-//	rocks[5].onKey = 77;//m
+//    rocks[0].onKey = 90;//z
+//    rocks[1].onKey = 67;//c
+//    rocks[2].onKey = 88;//x
+//    rocks[3].onKey = 78;//n
+//    rocks[4].onKey = 66;//b
+	rocks[0].onKey = 49;//1
+	rocks[1].onKey = 50;//2
+	rocks[2].onKey = 51;//3
+	rocks[3].onKey = 52;//4
+	rocks[4].onKey = 53;//5
 
 	rocks[0].colour = "#d82095";
 	rocks[1].colour = "#99df19";
 	rocks[2].colour = "#0cc4ec";
 	rocks[3].colour = "#fa611e";
 	rocks[4].colour = "#710bf6";
-//	rocks[5].colour = "#dcc20d";
+
+	rocks[0].letter = "U";
+	rocks[1].letter = "P";
+	rocks[2].letter = "R";
+	rocks[3].letter = "O";
+	rocks[4].letter = "K";
 
 	for (var i in rocks) {
 		rocks[i].elementSpeed = document.getElementById(rocks[i].speedDivId);
@@ -676,7 +682,9 @@ function startingGrid() {
 		rocks[i].elementAction.style.backgroundColor = rocks[i].colour;
 
 		var rock = rocks[i];
-		rock.x = i * 40 + 100;
+		rock.x = ((Number(i)+1)*(canvasSize.x/12.0));
+//        console.log("i" + i + "c" + camera.x + " ws " + worldScale + " cs" + canvasSize.x + " rx" + rock.x);
+//        context.arc((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale, rockMinSize*worldScale, 0, Math.PI*2, true);
 		rock.y = levelSize.y - 800;
 		rock.velocity = {x:0, y:0};
 		rock.acceleration = {x:0, y:0};
@@ -689,7 +697,7 @@ function startingGrid() {
 		rock.in = false;
 		rock.on = false;
 		rock.weight = 1;
-		rock.startLogoElement.style.color = "#000000";
+//        rock.startLogoElement.style.color = "#000000";
 		//    rock.startLogoElement.style.visibility = "hidden";
 	}
 	rocksIn = 0;
@@ -733,10 +741,6 @@ function startingGrid() {
 	desiredCamera.x = 0;
 	worldScale = 2;
 
-	//show/hide options
-	gameChoiceDiv.style.display = "";
-	playerChoiceDiv.style.display = "none";
-
 	originalRocks = [];
 	_.each(rocks, function(rock){originalRocks.push(rock);});
 
@@ -758,13 +762,13 @@ function mousemove(e) {
 function joinRock(i, local) {
 	var rock = rocks[i];
 	if (!rock.in) {
+		console.log("joined rock" + i);
 		rocksIn++;
 		rock.in = true;
 		rock.local = local;
 		if (local && !gameIsLocal) {
 			initRemote(rock);
 		}
-		rock.startLogoElement.style.color = rock.colour;
 	}
 }
 
@@ -794,27 +798,13 @@ function run_start(delta) {
 		var rock = rocks[i];
 		if (keys[rock.onKey] && rock.local) {
 			joinRock(i, true);
-			if (rock.sound) {
-				//unMuteSound(rock.sound);
-			}
 		}
 	}
 
 	if (rocksIn >= 2) {
 		timeLeftInStart -=delta;
-		startCountElement.innerHTML = Math.ceil(timeLeftInStart/1000);
-		startCountElementTwo.innerHTML = Math.ceil(timeLeftInStart/1000);
 	}
 	if (doingRaceCountDown) {
-		var startMessageHeight = startMessage.style.height;
-		startMessageHeight = parseInt(startMessageHeight);
-		if (startMessageHeight <= 30) {
-			startMessage.style.display = "none";
-		} else {
-			startMessage.style.height = startMessageHeight-30;//delta*0.5;
-			console.log("height: " + startMessage.style.height);
-		}
-		raceCountDown -= delta;
 		if (raceCountDown <= 0) {
 			change_state(game_play);
 		} else if (raceCountDown <= 2000 && !flashed2) {
@@ -824,22 +814,22 @@ function run_start(delta) {
 				rocks[i].on = true;
 			}
 		} else if (raceCountDown <= 1000 && !flashed1) {
-//            unMuteSound(drums[0]);
 			flash = 1;
 			flashed1 = true;
 			for (var i in rocks) {
 				rocks[i].on = false;
 			}
 		}
+		raceCountDown -=delta;
 	}
 	else if (timeLeftInStart <= 0 || rocksIn == numberOfRocks) {
 		console.log("starting game");
-		//    startMessage.style.display = "none";
 		camera.y = levelSize.y - 900;
 		desiredCamera.y = levelSize.y - 900;
 		worldScale = 2;
 		raceCountDown = 3000;
 		doingRaceCountDown = true;
+		muteAllSounds(oldRocks,1);
 		flashed1 = false;
 		flashed2 = false;
 		startTime = new Date();
@@ -859,47 +849,40 @@ function run_start(delta) {
 	} else {
 		flash = 0;
 	}
-	draw();
 
 }
 
 var timeInEnd = 0;
 function run_end(delta) {
-	draw();
 
-	if (startMessage.style.height < 250) {
-		startMessage.style.height += 10;
-	} else {
-		startMessage.style.height = 250;
-		stopAllSounds();
-		change_state(game_start);
-	}
+//    stopAllSounds();
+	change_state(game_start);
 
 }
 
 function setForPlay() {
 	//  worldScale = 5; // start really big
+	stopAllSounds(oldRocks);
+	startAllSounds();
 }
 
 function change_state(new_state) {
 	switch (new_state) {
 		case game_start:
 			startingGrid();
+			chooseLocal();
 			draw();
 			timeLeftInStart = playerCountDown;
 			doingRaceCountDown = false;
 			timeInStart = 0;
-			startMessage.style.display = "block";
-			startMessage.style.height = 250;
 			break;
 		case game_play:
 			setForPlay();
 			break;
 		case game_end:
 			endGame = false;
-			startMessage.style.display = "block";
-			startMessage.style.height = 0;
 			var winnerText = "Someone Won!";
+			localRockScores[rocks[0].originalNumber]++;
 			switch (rocks[0].originalNumber) {
 				case 0:
 					winnerText = "Pink";
@@ -920,9 +903,6 @@ function change_state(new_state) {
 					winnerText = "Yellow";
 					break;
 			}
-			startCountElement.innerHTML = winnerText + " Won!";
-			startCountElementTwo.innerHTML = winnerText + " Won!";
-			startCountElementTwo.style.color = rocks[0].colour;
 			timeInEnd = 3000;
 			break;
 	}
@@ -938,6 +918,7 @@ function loop() {
 		case game_start:
 			run_start(delta);
 			synchronise();
+			draw();
 			break;
 		case game_play:
 			update(delta);
@@ -946,6 +927,7 @@ function loop() {
 			break;
 		case game_end:
 			run_end(delta);
+			draw();
 			break;
 	}
 
@@ -1027,11 +1009,11 @@ function update(delta)
 			change_state(game_end);
 		}
 	}
-//    if (rocks[0].originalNumber === 0) {
-//        rocks[0].autopilot = false;
-//    }
 	for (i in rocks) {
 		rock = rocks[i];
+//        if (rock.originalNumber === 4) {
+//            rock.autopilot = false;
+//        }
 
 		if (!rock.autopilot) {
 			rock.on = false;
@@ -1073,7 +1055,7 @@ function update(delta)
 
 		rock.velocity.y += rock.acceleration.y * delta;
 		currentMaxYSpeed = maxRockYSpeed - (gameTime/gameDeclineTime);
-		console.log(currentMaxYSpeed);
+//        console.log(currentMaxYSpeed);
 		if (currentMaxYSpeed < minRockYSpeed) currentMaxYSpeed = minRockYSpeed;
 		if (rock.velocity.y < -currentMaxYSpeed) rock.velocity.y = -currentMaxYSpeed;
 		if (rock.velocity.y > currentMaxYSpeed) rock.velocity.y = currentMaxYSpeed;
@@ -1231,7 +1213,7 @@ function draw() {
 
 		camera.x = camera.x*(1-cameraTracking) + desiredCamera.x*cameraTracking;
 		camera.y = camera.y*(1-cameraTracking) + desiredCamera.y*cameraTracking;
-	}
+	} 
 	screenSize.x = canvasSize.x / worldScale;
 	screenSize.y = canvasSize.y / worldScale;
 
@@ -1239,6 +1221,7 @@ function draw() {
 
 	context.fillStyle="#ffffff";
 	context.fillRect(0,0,screenSize.x*worldScale, screenSize.y*worldScale);
+	
 
 
 
@@ -1259,7 +1242,25 @@ function draw() {
 
 	for (var i in rocks) {
 		var rock = rocks[i];
-		if (!rock.in) return;
+		if (!rock.in) {
+			if (mode == game_start) {
+				var textToDisplay;
+				if (localRockScores[i] > 0) {
+					textToDisplay = localRockScores[i];
+				} else {
+					textToDisplay = rock.letter;
+				}
+				var textMeasurements = context.measureText(textToDisplay);
+				context.font = "100px ostrich-black";
+				context.fillStyle = rock.colour;
+				context.fillText(textToDisplay, (rock.x - camera.x)*worldScale - textMeasurements.width*0.5, (rock.y+20 - camera.y)*worldScale);
+
+				context.font = "100px ostrich-bold";
+				context.fillStyle = "#000000";
+				context.fillText(textToDisplay, (rock.x - camera.x)*worldScale - textMeasurements.width*0.5, (rock.y+20 - camera.y)*worldScale);
+			}
+			continue;
+		}
 		if (rock.on) {
 			context.fillStyle = rock.colour;
 		} else {
@@ -1287,30 +1288,8 @@ function draw() {
 		}
 	}
 
-//		context.strokeStyle = "#000000";
-//		context.lineWidth = rock.size*rockMinSize*rocktrailWidth*worldScale*3;
-//		context.beginPath();
-//		var j;
-//		var first = false;
-//		context.moveTo((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale);
-//		for (var i = 0 ; i < rockTrailLength ; i++) {
-//			j = ((rockTrailPointer-i)+rockTrailLength)%rockTrailLength;
-//			if (rock.trail[j]) {
-//				if (first) {
-//					context.moveTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y)*worldScale);
-//					first = false;
-//				} else {
-//					context.lineTo((rock.trail[j].x - camera.x)*worldScale, (rock.trail[j].y - camera.y)*worldScale);
-//				}
-//			} else {
-//				first = true;
-//			}
-//		}
-//		context.stroke();
 		context.strokeStyle = rock.colour;
 		context.lineWidth = rock.size*rockMinSize*rocktrailWidth*worldScale;
-		//context.beginPath();
-		//context.moveTo((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale);
 		var j;
 		var prevj;
 		var first = true;
@@ -1337,14 +1316,18 @@ function draw() {
 			}
 			first = false;
 		}
-		//context.stroke();
-
-	//}
 	ticker ++;
 
 	if (endGame) {
 		context.font = "100px ostrich-bold";
 		var textToDisplay = (leftInGameTime/1000).toFixed(0);
+		var textMeasurements = context.measureText(textToDisplay);
+		context.fillStyle = "#000000";
+		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5-50);
+	}
+	if (mode === game_start && !doingRaceCountDown && rocksIn >= 2) {
+		context.font = "100px ostrich-bold";
+		var textToDisplay = (timeLeftInStart/1000).toFixed(0);
 		var textMeasurements = context.measureText(textToDisplay);
 		context.fillStyle = "#000000";
 		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5-50);
