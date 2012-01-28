@@ -87,7 +87,11 @@ var paramGetters = {
 				  return Math.sqrt(rock.velocity.x*rock.velocity.x+rock.velocity.y*rock.velocity.y) / Math.sqrt(rock.maxVelocity.x*rock.maxVelocity.x+rock.maxVelocity.y*rock.maxVelocity.y);
 			  },
 	positionX: function(rock) {
-				   return (rock.x-actualViewRect.left) / (actualViewRect.right-actualViewRect.left);
+				if (rocks.length > 1) {
+					return (rock.x-actualViewRect.left) / (actualViewRect.right-actualViewRect.left);
+				} else {
+					return 1;
+				}
 			   },
 	positionY: function(rock) {
 				   return (rock.y-actualViewRect.top) / (actualViewRect.bottom-actualViewRect.top);
