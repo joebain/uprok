@@ -60,11 +60,17 @@
        style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:9.56204033;stroke-miterlimit:4;stroke-opacity:1"
        d="m 31.312754,112.19737 790.437956,0 0,257.57652 -790.437956,0 z"
        id="rect3968"
-       inkscape:connector-curvature="0" />
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/joe/Code/flyrock/logo.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
     <g
        transform="matrix(3.1873469,0,0,3.1873469,581.00307,-326.05244)"
        style="font-size:40px;font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#710bf6;fill-opacity:1;stroke:none;font-family:Ostrich Sans;-inkscape-font-specification:Ostrich Sans Light"
-       id="flowRoot2985-7">
+       id="flowRoot2985-7"
+       inkscape:export-filename="/home/joe/Code/flyrock/logo.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
       <path
          d="m 63.80125,202.64675 -7.776,0 -12.096,-21.744 -2.808,4.392 0,17.352 -6.768,0 0,-19.224 -0.072,0 0.072,-0.144 0,-33.696 6.768,0 0,23.184 15.048,-23.184 8.136,0 -16.128,24.84 15.624,28.224 0,0"
          style="font-size:72px;font-weight:900;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#710bf6;font-family:Ostrich Sans;-inkscape-font-specification:Ostrich Sans Heavy"
@@ -74,7 +80,10 @@
     <g
        transform="matrix(3.1873469,0,0,3.1873469,249.37332,-326.05244)"
        style="font-size:40px;font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#fa611e;fill-opacity:1;stroke:none;font-family:Ostrich Sans;-inkscape-font-specification:Ostrich Sans Light"
-       id="flowRoot2985-4">
+       id="flowRoot2985-4"
+       inkscape:export-filename="/home/joe/Code/flyrock/logo.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
       <path
          d="m 54.87325,176.58275 c 1.295978,1.24802 2.279977,2.73602 2.952,4.464 0.719976,1.72802 1.079975,3.69602 1.08,5.904 l 0,15.696 -6.84,0 0,-15.696 c -1.8e-5,-4.65598 -2.256016,-6.98398 -6.768,-6.984 l -3.384,0 -0.864,0 0,22.68 -6.768,0 0,-53.064 11.016,0 c 4.559984,5e-5 7.991981,1.34405 10.296,4.032 2.111977,2.44805 3.167976,6.14404 3.168,11.088 -2.4e-5,4.89603 -1.056023,8.61603 -3.168,11.16 -0.09602,0.096 -0.216021,0.21603 -0.36,0.36 -0.09602,0.14403 -0.216021,0.26403 -0.36,0.36 m -9.576,-3.456 c 1.823987,3e-5 3.071986,-0.21597 3.744,-0.648 0.719985,-0.43197 1.175984,-0.76797 1.368,-1.008 1.055983,-1.34397 1.583982,-3.59997 1.584,-6.768 -1.8e-5,-1.77596 -0.144018,-3.19196 -0.432,-4.248 -0.288017,-1.10396 -0.720017,-1.94396 -1.296,-2.52 -0.528015,-0.62395 -1.224015,-1.03195 -2.088,-1.224 -0.816013,-0.19195 -1.776012,-0.28795 -2.88,-0.288 l -4.248,0 0,16.704 0.864,0 3.384,0"
          style="font-size:72px;font-weight:900;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#fa611e;font-family:Ostrich Sans;-inkscape-font-specification:Ostrich Sans Heavy"
@@ -84,7 +93,10 @@
     <g
        transform="matrix(3.1873469,0,0,3.1873469,128.63431,-326.28193)"
        style="font-size:40px;font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#0cc4ec;fill-opacity:1;stroke:none;font-family:Ostrich Sans;-inkscape-font-specification:Ostrich Sans Light"
-       id="flowRoot2985-8">
+       id="flowRoot2985-8"
+       inkscape:export-filename="/home/joe/Code/flyrock/logo.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
       <path
          d="m 61.42525,149.65475 7.776,0 -15.192,27.36 0,25.704 -6.768,0 0,-25.704 -15.12,-27.36 7.776,0 10.728,19.44 10.8,-19.44 0,0"
          style="font-size:72px;font-weight:900;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#0cc4ec;font-family:Ostrich Sans;-inkscape-font-specification:Ostrich Sans Heavy"
@@ -94,7 +106,10 @@
     <g
        transform="matrix(3.1873469,0,0,3.1873469,49.751502,-326.05244)"
        style="font-size:40px;font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#99df19;fill-opacity:1;stroke:none;font-family:Ostrich Sans;-inkscape-font-specification:Ostrich Sans Light"
-       id="flowRoot2985-9">
+       id="flowRoot2985-9"
+       inkscape:export-filename="/home/joe/Code/flyrock/logo.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
       <path
          d="m 57.39325,202.64675 -23.112,0 0,-53.064 6.768,0 0,46.296 16.344,0 0,6.768 0,0 0,0"
          style="font-size:72px;font-weight:900;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#99df19;font-family:Ostrich Sans;-inkscape-font-specification:Ostrich Sans Heavy"
@@ -104,7 +119,10 @@
     <g
        transform="matrix(3.1873469,0,0,3.1873469,-35.496159,-326.28193)"
        style="font-size:40px;font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#d82095;fill-opacity:1;stroke:none;font-family:Ostrich Sans;-inkscape-font-specification:Ostrich Sans Light"
-       id="flowRoot2985">
+       id="flowRoot2985"
+       inkscape:export-filename="/home/joe/Code/flyrock/logo.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
       <path
          d="m 56.24125,156.42275 -15.192,0 0,16.344 15.192,0 0,6.768 -15.192,0 0,23.184 -6.768,0 0,-53.064 21.96,0 0,6.768 0,0"
          style="font-size:72px;font-weight:900;text-align:start;writing-mode:lr-tb;text-anchor:start;fill:#d82095;font-family:Ostrich Sans;-inkscape-font-specification:Ostrich Sans Heavy"
@@ -114,7 +132,10 @@
     <g
        style="font-size:72px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Ostrich Sans;-inkscape-font-specification:Ostrich Sans Bold"
        id="text2993"
-       transform="matrix(3.1873469,0,0,3.1873469,-58.034107,-819.28153)">
+       transform="matrix(3.1873469,0,0,3.1873469,-58.034107,-819.28153)"
+       inkscape:export-filename="/home/joe/Code/flyrock/logo.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
       <path
          d="m 63.123715,311.20471 -15.192,0 0,16.272 15.192,0 0,2.592 -17.712,0 0,-21.456 17.712,0 0,2.592 m -19.44,20.52 0,25.704 -2.52,0 0,-53.064 21.96,0 0,2.592 -19.44,0 0,23.112 0,1.656 m 1.728,0 17.712,0 0,2.592 -15.192,0 0,23.112 -2.52,0 0,-25.704"
          id="path4025"
@@ -135,7 +156,10 @@
     <g
        style="font-size:72px;font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Ostrich Sans;-inkscape-font-specification:Ostrich Sans Bold"
        id="text2993-8"
-       transform="matrix(3.1873469,0,0,3.1873469,-58.034107,-819.28153)">
+       transform="matrix(3.1873469,0,0,3.1873469,-58.034107,-819.28153)"
+       inkscape:export-filename="/home/joe/Code/flyrock/logo.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
       <path
          d="m 237.19579,357.39272 -2.52,0 0,-19.224 -0.072,0 0.072,-0.144 0,-33.696 2.52,0 0,53.064 m 1.728,-53.064 2.52,0 0,23.184 15.048,-23.184 2.952,0 -20.52,31.752 0,-31.752 m 5.544,26.352 14.76,26.712 -2.88,0 -12.096,-21.744 -2.808,4.392 0,17.352 -2.52,0 0,-18.144 5.544,-8.568 m 16.992,-26.352 3.168,0 -16.128,24.84 15.624,28.224 -2.88,0 -15.768,-28.368 15.984,-24.696"
          id="path4034"
@@ -145,6 +169,9 @@
        style="fill:#000000"
        d="m 656.74074,235.28636 c 0,51.1231 -41.44345,92.56658 -92.56658,92.56658 -51.1231,0 -92.56655,-41.44348 -92.56655,-92.56658 0,-51.1231 41.44345,-92.56655 92.56655,-92.56655 51.12313,0 92.56658,41.44345 92.56658,92.56655 z"
        id="path3084"
-       inkscape:connector-curvature="0" />
+       inkscape:connector-curvature="0"
+       inkscape:export-filename="/home/joe/Code/flyrock/logo.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
   </g>
 </svg>
