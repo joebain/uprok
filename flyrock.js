@@ -519,7 +519,8 @@ function setupControls() {
 	if (previousSessionSettings) {
 		loadSettings(previousSessionSettings);
 	} else {
-		$.get("default.json", function(string) {loadSettings(string);});
+		loadSettings(JSON.stringify(soundDefaults));
+//        $.get("default.json", function(string) {loadSettings(string);});
 	}
 }
 
