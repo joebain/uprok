@@ -68,7 +68,7 @@ var thisTime = 0;
 var delta = 0;
 var interval = 0;
 var targetInterval = 17;
-var playerCountDown = 2000;
+var playerCountDown = 8000;
 var endGame = false;
 var leftInGameTime = 0;
 var gameIsLocal = true;
@@ -1001,7 +1001,7 @@ function update(delta)
 	if (rocks.length == 1) {
 		if (!endGame) {
 			endGame = true;
-			leftInGameTime = 30000;
+			leftInGameTime = 10000;
 		}
 
 		leftInGameTime -= delta;

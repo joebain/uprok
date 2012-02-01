@@ -138,7 +138,7 @@ function adjustSoundForRock(rock) {
 }
 
 var dlTimeout = 1000;
-function getSoundAndSave() {
+function getSoundAndSave(soundObj, success) {
 	if (soundObj.isLoaded) return;
 	setTimeout(function() {
 		var request = new XMLHttpRequest();
@@ -395,26 +395,30 @@ function loadSounds() {
 	var gotten = 0;
 
 //    rocks[0].startSound = {url:"sounds/laurie_start.ogg"}
+//    getSoundAndSave(rocks[0].startSound, function(){gotten++; if (gotten == 15) startAllSounds();});
 //    rocks[1].startSound = {url:"sounds/drums_start.ogg"};
 //    rocks[2].startSound = {url:"sounds/adrums_start.ogg"};
 //    rocks[3].startSound = {url:"sounds/plink_start.ogg"};
 //    rocks[4].startSound = {url:"sounds/bass_start.ogg"};
 //    rocks[0].midSound = {url:"sounds/laurie_mid.ogg"}
+//    getSoundAndSave(rocks[0].midSound, function(){gotten++; if (gotten == 15) startAllSounds();});
 //    rocks[1].midSound = {url:"sounds/drums_mid.ogg"};
 //    rocks[2].midSound = {url:"sounds/adrums_mid.ogg"};
 //    rocks[3].midSound = {url:"sounds/plink_mid.ogg"};
 //    rocks[4].midSound = {url:"sounds/bass_mid.ogg"};
 //    rocks[0].endSound = {url:"sounds/laurie_end.ogg"}
+//    getSoundAndSave(rocks[0].endSound, function(){gotten++; if (gotten == 15) startAllSounds();});
 //    rocks[1].endSound = {url:"sounds/drums_end.ogg"};
 //    rocks[2].endSound = {url:"sounds/adrums_end.ogg"};
 //    rocks[3].endSound = {url:"sounds/plink_end.ogg"};
 //    rocks[4].endSound = {url:"sounds/bass_end.ogg"};
+//    getSoundAndSave(rocks[4].endSound, function(){gotten++; if (gotten == 15) startAllSounds();});
 //    for (var i in rocks) {
 //        var rock = rocks[i];
 //        rock.track = {};
-//        getSound(rock.startSound, function(){gotten++; if (gotten == 15) startAllSounds();});
-//        getSound(rock.midSound, function(){gotten++; if (gotten == 15) startAllSounds();});
-//        getSound(rock.endSound, function(){gotten++; if (gotten == 15) startAllSounds();});
+//        getSoundAndSave(rock.startSound, function(){gotten++; if (gotten == 15) startAllSounds();});
+//        getSoundAndSave(rock.midSound, function(){gotten++; if (gotten == 15) startAllSounds();});
+//        getSoundAndSave(rock.endSound, function(){gotten++; if (gotten == 15) startAllSounds();});
 //    }
 
 	rocks[0].startSound = {sourceArray:laurie_start}
