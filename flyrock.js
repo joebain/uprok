@@ -99,6 +99,7 @@ var updateSlidersParam = {value:false, name:"update sliders"};
 var previousSessionSettings;
 
 function init() {
+	console.log("init!!!!");
 	canvasSize.x = $(document).width();
 	canvasSize.y = $(document).height();
 	var canvas = document.getElementById("canvas");
@@ -627,8 +628,12 @@ function startingGrid() {
 		if (!localRockScores[i]) {
 			localRockScores[i] = 0;
 		}
-		oldRocks[i] = rocks[i];
-		rocks[i] = {};
+		if (oldRocks[i]) {
+			rocks[i] = oldRocks[i];
+		} else {
+			rocks[i] = {};
+			oldRocks[i] = rocks[i];
+		}
 		rocks[i].x = pointSpacing * 2;
 		rocks[i].y = 300;
 		rocks[i].size = rockMinSize;
@@ -863,8 +868,8 @@ function run_end(delta) {
 
 function setForPlay() {
 	//  worldScale = 5; // start really big
-	stopAllSounds(oldRocks);
-	startAllSounds();
+//    stopAllSounds(oldRocks);
+//    startAllSounds();
 }
 
 function change_state(new_state) {
@@ -1320,18 +1325,40 @@ function draw() {
 	ticker ++;
 
 	if (endGame) {
-		context.font = "100px ostrich-bold";
 		var textToDisplay = (leftInGameTime/1000).toFixed(0);
 		var textMeasurements = context.measureText(textToDisplay);
+
+		context.font = "100px ostrich-black";
+		context.fillStyle = rocks[0].colour;
+		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
+
+		context.font = "100px ostrich-bold";
 		context.fillStyle = "#000000";
-		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5-50);
+		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
 	}
 	if (mode === game_start && !doingRaceCountDown && rocksIn >= 2) {
-		context.font = "100px ostrich-bold";
 		var textToDisplay = (timeLeftInStart/1000).toFixed(0);
 		var textMeasurements = context.measureText(textToDisplay);
+
+		context.font = "100px ostrich-black";
+		context.fillStyle = "#ffffff";
+		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
+
+		context.font = "100px ostrich-bold";
 		context.fillStyle = "#000000";
-		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5-50);
+		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
+	}
+	if (mode === game_start && doingRaceCountDown) {
+		var textToDisplay = "R A C E !";
+		var textMeasurements = context.measureText(textToDisplay);
+
+		context.font = "102px ostrich-black";
+		context.fillStyle = "#ffffff";
+		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
+
+		context.font = "100px ostrich-bold";
+		context.fillStyle = "#000000";
+		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
 	}
 
 }
