@@ -861,8 +861,12 @@ function run_start(delta) {
 var timeInEnd = 0;
 function run_end(delta) {
 
+	muteAllSounds(rocks, 1);
+	setTimeout(function(){
+		location.reload(true);
+	}, 1000);
 //    stopAllSounds();
-	change_state(game_start);
+//    change_state(game_start);
 
 }
 
