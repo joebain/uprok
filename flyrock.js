@@ -19,6 +19,9 @@ var maxRockYSpeed = 5;
 var minRockYSpeed = 2;
 var gameDeclineTime = 50000;
 var rockSpeedIncreasePerSecond = 0.000000006;
+var loopdeloopDuration = 400;
+var loopdeloopActionTime = 200;
+var winnerText = "Someone";
 
 var camera = {x:0, y:0};
 var desiredCamera = {x:0, y:0};
@@ -36,6 +39,7 @@ var cameraZoomingIn = 0.001;
 var cameraBorder = 0.15;
 var minWorldScale = 0.2;
 var maxWorldScale = 0.7;
+var tinyWorldScale = 0.4;
 var cameraAhead = 0.1;
 
 var worldScale = 1;
@@ -654,6 +658,8 @@ function startingGrid() {
 		rocks[i].local = false;
 		rocks[i].autopilot = false;
 		rocks[i].magicFilterNumber = 0.8;
+		rocks[i].lastOn = 0;
+		rocks[i].lastOff = 0;
 		rockMap[i] = rocks[i];
 	}
 
@@ -669,10 +675,15 @@ function startingGrid() {
 	rocks[4].onKey = 53;//5
 
 	rocks[0].colour = "#d82095";
+	rocks[0].r = 216; rocks[0].g = 32; rocks[0].b = 149;
 	rocks[1].colour = "#99df19";
+	rocks[1].r = 153; rocks[1].g = 223; rocks[1].b = 25;
 	rocks[2].colour = "#0cc4ec";
+	rocks[2].r = 12; rocks[2].g = 196; rocks[2].b = 236;
 	rocks[3].colour = "#fa611e";
+	rocks[3].r = 250; rocks[3].g = 97; rocks[3].b = 30;
 	rocks[4].colour = "#710bf6";
+	rocks[4].r = 113; rocks[4].g = 11; rocks[4].b = 246;
 
 	rocks[0].letter = "U";
 	rocks[1].letter = "P";
@@ -891,28 +902,7 @@ function change_state(new_state) {
 			break;
 		case game_end:
 			endGame = false;
-			var winnerText = "Someone Won!";
 			localRockScores[rocks[0].originalNumber]++;
-			switch (rocks[0].originalNumber) {
-				case 0:
-					winnerText = "Pink";
-					break;
-				case 1:
-					winnerText = "Green";
-					break;
-				case 2:
-					winnerText = "Blue";
-					break;
-				case 3:
-					winnerText = "Orange";
-					break;
-				case 4:
-					winnerText = "Purple";
-					break;
-				case 5:
-					winnerText = "Yellow";
-					break;
-			}
 			timeInEnd = 3000;
 			break;
 	}
@@ -1010,6 +1000,26 @@ function update(delta)
 	if (rocks.length == 1) {
 		if (!endGame) {
 			endGame = true;
+			switch (rocks[0].originalNumber) {
+				case 0:
+					winnerText = "Pink";
+					break;
+				case 1:
+					winnerText = "Green";
+					break;
+				case 2:
+					winnerText = "Blue";
+					break;
+				case 3:
+					winnerText = "Orange";
+					break;
+				case 4:
+					winnerText = "Purple";
+					break;
+				case 5:
+					winnerText = "Yellow";
+					break;
+			}
 			leftInGameTime = 10000;
 		}
 
@@ -1021,17 +1031,42 @@ function update(delta)
 	}
 	for (i in rocks) {
 		rock = rocks[i];
-//        if (rock.originalNumber === 4) {
-//            rock.autopilot = false;
-//        }
+		if (rock.originalNumber === 0) {
+			rock.autopilot = false;
+		} else {
+			rock.autopilot = true;
+		}
 
+//        if (!rock.autopilot) {
+//            rock.on = false;
+//        }
 		if (!rock.autopilot) {
-			rock.on = false;
+			if (keys[rock.onKey]) {//z
+				if (!rock.on) {
+					rock.lastOn = gameTime;
+				}
+				rock.on = true;
+				if (!rock.loopdeloop && gameTime - rock.lastOff < loopdeloopActionTime) {
+					rock.loopdeloop = true;
+					rock.loopdeloopStart = gameTime;
+					rock.loopdeloopVelocity = Math.sqrt(rock.velocity.x*rock.velocity.x + rock.velocity.y*rock.velocity.y);
+					rock.loopdeloopAngle = Math.atan2(rock.velocity.x, rock.velocity.y);
+				}
+			} else {
+				if (rock.on) {
+					rock.lastOff = gameTime;
+				}
+				rock.on = false;
+				console.log(rock.lastOn + ", " + (gameTime - rock.lastOn));
+				if (!rock.loopdeloop && gameTime - rock.lastOn < loopdeloopActionTime) {
+					rock.loopdeloop = true;
+					rock.loopdeloopStart = gameTime;
+					rock.loopdeloopVelocity = Math.sqrt(rock.velocity.x*rock.velocity.x + rock.velocity.y*rock.velocity.y);
+					rock.loopdeloopAngle = Math.atan2(rock.velocity.x, rock.velocity.y);
+				}
+			}
 		}
-		if (keys[rock.onKey]) {//z
-			rock.on = true;
-		}
-		controlSound();
+//        controlSound();
 
 		restrictToLevel(rock);
 		rock.underGround = isBelowGround(rock);
@@ -1070,6 +1105,21 @@ function update(delta)
 		if (rock.velocity.y < -currentMaxYSpeed) rock.velocity.y = -currentMaxYSpeed;
 		if (rock.velocity.y > currentMaxYSpeed) rock.velocity.y = currentMaxYSpeed;
 		rock.velocity.x += rock.acceleration.x * delta;
+
+		if (rock.loopdeloop) {
+			var loopdeloopTime = gameTime - rock.loopdeloopStart;
+			rock.velocity.x = Math.sin(Math.PI*2*loopdeloopTime/loopdeloopDuration + rock.loopdeloopAngle)*rock.loopdeloopVelocity;
+			rock.velocity.y = Math.cos(Math.PI*2*loopdeloopTime/loopdeloopDuration + rock.loopdeloopAngle)*rock.loopdeloopVelocity;
+			var loopAmount = Math.PI+(Math.PI-rock.loopdeloopAngle)*2;
+			loopAmount -= Math.PI;
+			loopAmount %= 2*Math.PI;
+			loopAmount += Math.PI;
+			loopAmount /= 2*Math.PI;
+			if (loopdeloopTime > loopdeloopDuration*loopAmount) {
+				rock.loopdeloop = false;
+			}
+		}
+
 		if ( manualControl) {
 			var speed = 50;
 			if ( keys[38]) { //up
@@ -1092,6 +1142,7 @@ function update(delta)
 
 		if (rock.velocity.x > rock.maxVelocity.x) rock.maxVelocity.x = rock.velocity.x;
 		if (Math.abs(rock.velocity.y) > rock.maxVelocity.y) rock.maxVelocity.y = Math.abs(rock.velocity.y);
+
 		
 
 
@@ -1131,7 +1182,11 @@ function update(delta)
 	if (rocks.length == 1) {
 		panCamera(rocks[0].x - screenSize.x/4, rocks[0].y - screenSize.y/2);
 
-		scaleWorld(0.5/rocks[0].velocity.x);
+		if (rocks[0].loopdeloop) {
+			scaleWorld(0.5/rocks[0].loopdeloopVelocity);
+		} else {
+			scaleWorld(0.5/rocks[0].velocity.x);
+		}
 	} else {
 		panCamera(((viewRect.left + viewRect.right) /2 - ((screenSize.x*(1-cameraAhead))/2)), (viewRect.top + viewRect.bottom) /2 - screenSize.y/2);
 
@@ -1223,7 +1278,11 @@ function draw() {
 
 		camera.x = camera.x*(1-cameraTracking) + desiredCamera.x*cameraTracking;
 		camera.y = camera.y*(1-cameraTracking) + desiredCamera.y*cameraTracking;
-	} 
+	} else if (mode === game_start && doingRaceCountDown && raceCountDown < 500) {
+		worldScale = worldScale*(0.9) + desiredWorldScale*0.1;
+		camera.x = camera.x*(1-cameraTracking) + desiredCamera.x*cameraTracking;
+		camera.y = camera.y*(1-cameraTracking) + desiredCamera.y*cameraTracking;
+	}
 	screenSize.x = canvasSize.x / worldScale;
 	screenSize.y = canvasSize.y / worldScale;
 
@@ -1279,6 +1338,14 @@ function draw() {
 		context.beginPath();
 		context.arc((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale, rockMinSize*worldScale, 0, Math.PI*2, true);
 		context.fill();
+		
+		if (worldScale < tinyWorldScale) {
+			context.strokeStyle = "rgba("+rock.r + "," + rock.g + "," + rock.b + ", " + (1-(worldScale-minWorldScale)/(tinyWorldScale-minWorldScale)) + ")";
+			context.lineWidth = 10*worldScale;
+			context.beginPath();
+			context.arc((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale, rockMinSize*5*worldScale, 0, Math.PI*2, true);
+			context.stroke();
+		}
 
 		if (rock.on) {
 			//context.fillStyle ="rgba(0,0,0," + (1-flash) + ")";// "#000000";
@@ -1339,6 +1406,17 @@ function draw() {
 		context.font = "100px ostrich-bold";
 		context.fillStyle = "#000000";
 		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
+
+		textToDisplay = winnerText + " wins!";
+		textMeasurements = context.measureText(textToDisplay);
+
+		context.font = "100px ostrich-black";
+		context.fillStyle = rocks[0].colour;
+		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 150);
+
+		context.font = "100px ostrich-bold";
+		context.fillStyle = "#000000";
+		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 150);
 	}
 	if (mode === game_start && !doingRaceCountDown && rocksIn >= 2) {
 		var textToDisplay = (timeLeftInStart/1000).toFixed(0);
@@ -1353,16 +1431,52 @@ function draw() {
 		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
 	}
 	if (mode === game_start && doingRaceCountDown) {
+		var alpha = raceCountDown/500;
 		var textToDisplay = "R A C E !";
+		context.font = "102px ostrich-black";
 		var textMeasurements = context.measureText(textToDisplay);
 
-		context.font = "102px ostrich-black";
-		context.fillStyle = "#ffffff";
+//        context.fillStyle = "#ffffff";
+		context.fillStyle ="rgba(255,255,255," + alpha + ")";// "#000000";
 		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
 
 		context.font = "100px ostrich-bold";
-		context.fillStyle = "#000000";
+//        context.fillStyle = "#000000";
+		context.fillStyle ="rgba(0,0,0," + alpha + ")";// "#000000";
 		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
+	}
+	if (mode === game_start) {
+		context.font = "60px ostrich-black";
+		var textToDisplay = "Press button when under ground";
+		var textMeasurements = context.measureText(textToDisplay);
+
+		var alpha = doingRaceCountDown ? raceCountDown/500 : 1;
+		context.fillStyle ="rgba(255,255,255," + alpha + ")";// "#000000";
+		context.fillRect(canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+65, textMeasurements.width, 65);
+
+//        context.font = "60px ostrich-black";
+//        context.fillStyle = "#ffffff";
+//        context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+120);
+
+		context.font = "60px ostrich-bold";
+		context.fillStyle ="rgba(0,0,0," + alpha + ")";// "#000000";
+		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+120);
+
+		textToDisplay = "Tap to loop de loop";
+		textMeasurements = context.measureText(textToDisplay);
+
+//        context.fillStyle = "#ffffff";
+		context.fillStyle ="rgba(255,255,255," + alpha + ")";// "#000000";
+		context.fillRect(canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+135, textMeasurements.width, 65);
+
+//        context.font = "60px ostrich-black";
+//        context.fillStyle = "#ffffff";
+//        context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+190);
+
+		context.font = "60px ostrich-bold";
+//        context.fillStyle = "#000000";
+		context.fillStyle ="rgba(0,0,0," + alpha + ")";// "#000000";
+		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+190);
 	}
 
 }
