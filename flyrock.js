@@ -39,7 +39,7 @@ var cameraZoomingIn = 0.001;
 var cameraBorder = 0.15;
 var minWorldScale = 0.2;
 var maxWorldScale = 0.7;
-var tinyWorldScale = 0.4;
+var tinyWorldScale = 0.35;
 var cameraAhead = 0.1;
 
 var worldScale = 1;
@@ -101,6 +101,9 @@ var globalModsUI = [];
 var sliders = [];
 var updateSlidersParam = {value:false, name:"update sliders"};
 var previousSessionSettings;
+
+var loopdeloopon = true;
+var georgeMode = false;
 
 function init() {
 	console.log("init!!!!");
@@ -628,6 +631,13 @@ function updatePlayers(players) {
 }
 
 function startingGrid() {
+	if (Math.floor(Math.random() * 200) === 0) {
+		georgeMode = true;
+		numberOfRocks = 6;
+	} else {
+		georgeMode = false;
+		numberOfRocks = 5;
+	}
 	for (var i = 0 ; i < numberOfRocks ; i++) {
 		if (!localRockScores[i]) {
 			localRockScores[i] = 0;
@@ -685,21 +695,34 @@ function startingGrid() {
 	rocks[4].colour = "#710bf6";
 	rocks[4].r = 113; rocks[4].g = 11; rocks[4].b = 246;
 
-	rocks[0].letter = "U";
-	rocks[1].letter = "P";
-	rocks[2].letter = "R";
-	rocks[3].letter = "O";
-	rocks[4].letter = "K";
+	if (!georgeMode) {
+		rocks[0].letter = "U";
+		rocks[1].letter = "P";
+		rocks[2].letter = "R";
+		rocks[3].letter = "O";
+		rocks[4].letter = "K";
+	} else {
+		rocks[0].letter = "G";
+		rocks[1].letter = "E";
+		rocks[2].letter = "O";
+		rocks[3].letter = "R";
+		rocks[4].letter = "G";
+		rocks[5].letter = "E";
+
+		rocks[5].colour = "#dcc20d";
+		rocks[5].r = 220; rocks[5].g = 194; rocks[5].b = 13;
+		rocks[5].autopilot = true;
+	}
 
 	for (var i in rocks) {
-		rocks[i].elementSpeed = document.getElementById(rocks[i].speedDivId);
-		rocks[i].elementSpeed.style.color = rocks[i].colour;
-		rocks[i].elementScore = document.getElementById(rocks[i].scoreDivId);
-		rocks[i].elementAction = document.getElementById(rocks[i].actionDivId);
-		rocks[i].elementAction.style.backgroundColor = rocks[i].colour;
+//        rocks[i].elementSpeed = document.getElementById(rocks[i].speedDivId);
+//        rocks[i].elementSpeed.style.color = rocks[i].colour;
+//        rocks[i].elementScore = document.getElementById(rocks[i].scoreDivId);
+//        rocks[i].elementAction = document.getElementById(rocks[i].actionDivId);
+//        rocks[i].elementAction.style.backgroundColor = rocks[i].colour;
 
 		var rock = rocks[i];
-		rock.x = ((Number(i)+1)*(canvasSize.x/12.0));
+		rock.x = ((Number(i)+1)*(canvasSize.x/((numberOfRocks+1)*2)));
 //        console.log("i" + i + "c" + camera.x + " ws " + worldScale + " cs" + canvasSize.x + " rx" + rock.x);
 //        context.arc((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale, rockMinSize*worldScale, 0, Math.PI*2, true);
 		rock.y = levelSize.y - 800;
@@ -707,7 +730,7 @@ function startingGrid() {
 		rock.acceleration = {x:0, y:0};
 		rock.trail = [];
 		for (var t = 0 ; t < rockTrailLength ; t++) {
-			rock.trail[t] = {x:0, y:0, underGround:false};
+			rock.trail[t] = {x:rock.x, y:rock.y, underGround:false};
 		}
 		rock.force = {x:0, y:0};
 		rock.maxVelocity = {x:0, y:0};
@@ -860,6 +883,8 @@ function run_start(delta) {
 				}
 			}
 		} while (foundOne);
+	} else if (georgeMode && (rocksIn == numberOfRocks-1 || timeLeftInStart < 1000)) {
+		joinRock(numberOfRocks-1);
 	}
 	if (flash > 0) {
 		flash = flash - (delta*0.002);
@@ -1017,7 +1042,7 @@ function update(delta)
 					winnerText = "Purple";
 					break;
 				case 5:
-					winnerText = "Yellow";
+					winnerText = "George";
 					break;
 			}
 			leftInGameTime = 10000;
@@ -1031,11 +1056,11 @@ function update(delta)
 	}
 	for (i in rocks) {
 		rock = rocks[i];
-		if (rock.originalNumber === 0) {
-			rock.autopilot = false;
-		} else {
-			rock.autopilot = true;
-		}
+//        if (rock.originalNumber === 0) {
+//            rock.autopilot = false;
+//        } else {
+//            rock.autopilot = true;
+//        }
 
 //        if (!rock.autopilot) {
 //            rock.on = false;
@@ -1046,7 +1071,7 @@ function update(delta)
 					rock.lastOn = gameTime;
 				}
 				rock.on = true;
-				if (!rock.loopdeloop && gameTime - rock.lastOff < loopdeloopActionTime) {
+				if (loopdeloopon && !rock.loopdeloop && gameTime - rock.lastOff < loopdeloopActionTime) {
 					rock.loopdeloop = true;
 					rock.loopdeloopStart = gameTime;
 					rock.loopdeloopVelocity = Math.sqrt(rock.velocity.x*rock.velocity.x + rock.velocity.y*rock.velocity.y);
@@ -1058,7 +1083,7 @@ function update(delta)
 				}
 				rock.on = false;
 				console.log(rock.lastOn + ", " + (gameTime - rock.lastOn));
-				if (!rock.loopdeloop && gameTime - rock.lastOn < loopdeloopActionTime) {
+				if (loopdeloopon && !rock.loopdeloop && gameTime - rock.lastOn < loopdeloopActionTime) {
 					rock.loopdeloop = true;
 					rock.loopdeloopStart = gameTime;
 					rock.loopdeloopVelocity = Math.sqrt(rock.velocity.x*rock.velocity.x + rock.velocity.y*rock.velocity.y);
@@ -1103,10 +1128,11 @@ function update(delta)
 //        console.log(currentMaxYSpeed);
 		if (currentMaxYSpeed < minRockYSpeed) currentMaxYSpeed = minRockYSpeed;
 		if (rock.velocity.y < -currentMaxYSpeed) rock.velocity.y = -currentMaxYSpeed;
-		if (rock.velocity.y > currentMaxYSpeed) rock.velocity.y = currentMaxYSpeed;
+//        if (rock.velocity.y > currentMaxYSpeed) rock.velocity.y = currentMaxYSpeed;
 		rock.velocity.x += rock.acceleration.x * delta;
 
-		if (rock.loopdeloop) {
+		if (loopdeloopon && rock.loopdeloop) {
+			rock.loopdeloopVelocity += 0.001 * delta;
 			var loopdeloopTime = gameTime - rock.loopdeloopStart;
 			rock.velocity.x = Math.sin(Math.PI*2*loopdeloopTime/loopdeloopDuration + rock.loopdeloopAngle)*rock.loopdeloopVelocity;
 			rock.velocity.y = Math.cos(Math.PI*2*loopdeloopTime/loopdeloopDuration + rock.loopdeloopAngle)*rock.loopdeloopVelocity;
@@ -1159,7 +1185,7 @@ function update(delta)
 		if ( rock.x > viewRect.right ) viewRect.right = rock.x;
 
 		// trails
-		if (rock.on) {
+		if (rock.on || rock.loopdeloop) {
 			rock.trail[rockTrailPointer] = {x:rock.x, y:rock.y, underGround:rock.underGround};
 		}
 	}
@@ -1263,7 +1289,7 @@ function synchronise() {
 }
 
 function removeRock(i) {
-	rocks[i].elementSpeed.innerHTML = "Out";
+//    rocks[i].elementSpeed.innerHTML = "Out";
 	muteSound(rocks[i].track);
 	rocks.splice(i,1);
 }
@@ -1340,7 +1366,7 @@ function draw() {
 		context.fill();
 		
 		if (worldScale < tinyWorldScale) {
-			context.strokeStyle = "rgba("+rock.r + "," + rock.g + "," + rock.b + ", " + (1-(worldScale-minWorldScale)/(tinyWorldScale-minWorldScale)) + ")";
+			context.strokeStyle = "rgba("+rock.r + "," + rock.g + "," + rock.b + ", " + (0.8-(worldScale-minWorldScale)/(tinyWorldScale-minWorldScale)) + ")";
 			context.lineWidth = 10*worldScale;
 			context.beginPath();
 			context.arc((rock.x - camera.x)*worldScale, (rock.y - camera.y)*worldScale, rockMinSize*5*worldScale, 0, Math.PI*2, true);
@@ -1358,11 +1384,11 @@ function draw() {
 		
 
 
-		if (ticker%5 == 0) {
-			rock.elementSpeed.innerHTML = (rock.velocity.x*100).toFixed(2) + " mph";
-			rock.elementScore.innerHTML = (rock.maxVelocity.x*100).toFixed(2) + " mph";
+//        if (ticker%5 == 0) {
+//            rock.elementSpeed.innerHTML = (rock.velocity.x*100).toFixed(2) + " mph";
+//            rock.elementScore.innerHTML = (rock.maxVelocity.x*100).toFixed(2) + " mph";
 
-		}
+//        }
 	}
 
 		context.strokeStyle = rock.colour;
@@ -1407,16 +1433,42 @@ function draw() {
 		context.fillStyle = "#000000";
 		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
 
-		textToDisplay = winnerText + " wins!";
-		textMeasurements = context.measureText(textToDisplay);
+		if (georgeMode && rocks[0].originalNumber === numberOfRocks-1) {
+			textToDisplay = "Happy Birthday";
 
-		context.font = "100px ostrich-black";
-		context.fillStyle = rocks[0].colour;
-		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 150);
+			textMeasurements = context.measureText(textToDisplay);
 
-		context.font = "100px ostrich-bold";
-		context.fillStyle = "#000000";
-		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 150);
+			context.font = "100px ostrich-black";
+			context.fillStyle = rocks[0].colour;
+			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 210);
+
+			context.font = "100px ostrich-bold";
+			context.fillStyle = "#000000";
+			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 210);
+
+
+			textToDisplay = "George!";
+			textMeasurements = context.measureText(textToDisplay);
+
+			context.font = "100px ostrich-black";
+			context.fillStyle = rocks[0].colour;
+			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 120);
+
+			context.font = "100px ostrich-bold";
+			context.fillStyle = "#000000";
+			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 120);
+		} else {
+			textToDisplay = winnerText + " wins!";
+			textMeasurements = context.measureText(textToDisplay);
+
+			context.font = "100px ostrich-black";
+			context.fillStyle = rocks[0].colour;
+			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 150);
+
+			context.font = "100px ostrich-bold";
+			context.fillStyle = "#000000";
+			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 150);
+		}
 	}
 	if (mode === game_start && !doingRaceCountDown && rocksIn >= 2) {
 		var textToDisplay = (timeLeftInStart/1000).toFixed(0);
@@ -1462,21 +1514,23 @@ function draw() {
 		context.fillStyle ="rgba(0,0,0," + alpha + ")";// "#000000";
 		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+120);
 
-		textToDisplay = "Tap to loop de loop";
-		textMeasurements = context.measureText(textToDisplay);
+	if (loopdeloopon) {
+			textToDisplay = "Tap to loop de loop";
+			textMeasurements = context.measureText(textToDisplay);
 
-//        context.fillStyle = "#ffffff";
-		context.fillStyle ="rgba(255,255,255," + alpha + ")";// "#000000";
-		context.fillRect(canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+135, textMeasurements.width, 65);
+	//        context.fillStyle = "#ffffff";
+			context.fillStyle ="rgba(255,255,255," + alpha + ")";// "#000000";
+			context.fillRect(canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+135, textMeasurements.width, 65);
 
-//        context.font = "60px ostrich-black";
-//        context.fillStyle = "#ffffff";
-//        context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+190);
+	//        context.font = "60px ostrich-black";
+	//        context.fillStyle = "#ffffff";
+	//        context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+190);
 
-		context.font = "60px ostrich-bold";
-//        context.fillStyle = "#000000";
-		context.fillStyle ="rgba(0,0,0," + alpha + ")";// "#000000";
-		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+190);
+			context.font = "60px ostrich-bold";
+	//        context.fillStyle = "#000000";
+			context.fillStyle ="rgba(0,0,0," + alpha + ")";// "#000000";
+			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+190);
+	}
 	}
 
 }
