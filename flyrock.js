@@ -631,7 +631,7 @@ function updatePlayers(players) {
 }
 
 function startingGrid() {
-	if (Math.floor(Math.random() * 200) === 0) {
+	if (false && Math.floor(Math.random() * 200) === 0) {
 		georgeMode = true;
 		numberOfRocks = 6;
 	} else {
@@ -812,6 +812,15 @@ function joinRock(i, local) {
 	}
 }
 
+function leaveRock(i) {
+	var rock = rocks[i];
+	if (rock.in) {
+		console.log("joined rock" + i);
+		rocksIn--;
+		rock.in = false;
+	}
+}
+
 function controlSound() {
 	if (keys[73]) { //i
 //        muteSound(drums[0]);
@@ -834,15 +843,21 @@ function run_start(delta) {
 
 	controlSound();
 
-	for (var i in rocks) {
-		var rock = rocks[i];
-		if (keys[rock.onKey] && rock.local) {
-			joinRock(i, true);
+	if (!doingRaceCountDown) {
+		for (var i in rocks) {
+			var rock = rocks[i];
+			if (keys[rock.onKey] && rock.local) {
+				joinRock(i, true);
+			} else {
+				leaveRock(i);
+			}
 		}
 	}
 
 	if (rocksIn >= 2) {
 		timeLeftInStart -=delta;
+	} else {
+		timeLeftInStart = playerCountDown;
 	}
 	if (doingRaceCountDown) {
 		if (raceCountDown <= 0) {
@@ -1082,7 +1097,7 @@ function update(delta)
 					rock.lastOff = gameTime;
 				}
 				rock.on = false;
-				console.log(rock.lastOn + ", " + (gameTime - rock.lastOn));
+//                console.log(rock.lastOn + ", " + (gameTime - rock.lastOn));
 				if (loopdeloopon && !rock.loopdeloop && gameTime - rock.lastOn < loopdeloopActionTime) {
 					rock.loopdeloop = true;
 					rock.loopdeloopStart = gameTime;
@@ -1091,7 +1106,7 @@ function update(delta)
 				}
 			}
 		}
-//        controlSound();
+		controlSound();
 
 		restrictToLevel(rock);
 		rock.underGround = isBelowGround(rock);

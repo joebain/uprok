@@ -376,7 +376,7 @@ function startAllSounds() {
 		muteSound(rocks[i].track, 0);
 	}
 	loopSounds();
-//    setupControls();
+	setupControls();
 }
 function stopAllSounds(oldRocks) {
 	return;
