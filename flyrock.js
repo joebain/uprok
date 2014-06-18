@@ -1,6 +1,15 @@
 var context;
 var audioContext;
 
+if (!window.navigator.userAgent.match(/chrom/i)) {
+	$(function() {
+		$("body").html("<h1>UPROK</h1><h2>Chrome only right now, sorry!</h2><p><a href=http://google.com/chrome>Get Chrome here</a></p>");
+		throw "Error";
+	});
+}
+
+var one_player_mode = !!window.location.search.match(/one_player=yes/);
+
 var ground = [];
 
 var Vector2f = function(x, y) {
@@ -783,6 +792,7 @@ function joinRock(i, local) {
 		rocksIn++;
 		rock.in = true;
 		rock.local = local;
+		rock.joinTime = timeInStart;
 		if (local && !gameIsLocal) {
 			initRemote(rock);
 		}
@@ -813,12 +823,12 @@ function run_start(delta) {
 
 	for (var i in rocks) {
 		var rock = rocks[i];
-		if (keys[rock.onKey] && rock.local) {
+		if ((keys[rock.onKey] && rock.local) || (one_player_mode && rocks[0].in && i > 0 && timeInStart-rocks[0].joinTime > i*1000)) {
 			joinRock(i, true);
 		}
 	}
 
-	if (rocksIn >= 2) {
+	if (rocksIn >= 2 && (!one_player_mode || rocks[0].in)) {
 		timeLeftInStart -=delta;
 	}
 	if (doingRaceCountDown) {
@@ -1031,10 +1041,14 @@ function update(delta)
 	}
 	for (i in rocks) {
 		rock = rocks[i];
-		if (rock.originalNumber === 0) {
-			rock.autopilot = false;
+		if (one_player_mode) {
+			if (rock.originalNumber === 0) {
+				rock.autopilot = false;
+			} else {
+				rock.autopilot = true;
+			}
 		} else {
-			rock.autopilot = true;
+			rock.autopilot = false;
 		}
 
 //        if (!rock.autopilot) {
@@ -1446,6 +1460,22 @@ function draw() {
 		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
 	}
 	if (mode === game_start) {
+		if (one_player_mode) {
+			var textToDisplay = "Single player mode: Press '1' key";
+
+			context.font = "40px ostrich-black";
+			var textMeasurements = context.measureText(textToDisplay);
+
+			var alpha = doingRaceCountDown ? raceCountDown/500 : 1;
+			context.fillStyle ="rgba(0,0,0," + alpha + ")";
+			context.fillRect(canvasSize.x*0.5 - textMeasurements.width*0.5, 10, textMeasurements.width, 45);
+
+			context.font = "40px ostrich-bold";
+			context.fillStyle ="rgba(255,255,255," + alpha + ")";
+			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, 50);
+
+		}
+
 		context.font = "60px ostrich-black";
 		var textToDisplay = "Press button when under ground";
 		var textMeasurements = context.measureText(textToDisplay);
@@ -1453,10 +1483,6 @@ function draw() {
 		var alpha = doingRaceCountDown ? raceCountDown/500 : 1;
 		context.fillStyle ="rgba(255,255,255," + alpha + ")";// "#000000";
 		context.fillRect(canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+65, textMeasurements.width, 65);
-
-//        context.font = "60px ostrich-black";
-//        context.fillStyle = "#ffffff";
-//        context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+120);
 
 		context.font = "60px ostrich-bold";
 		context.fillStyle ="rgba(0,0,0," + alpha + ")";// "#000000";
