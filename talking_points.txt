@@ -1,0 +1,14 @@
+ * encoding audio as js files for local file inclusion
+ * web audio awesome ness
+  * routing
+  * performance
+  * filters and effects
+ * tweakable paramaters
+  * saving and loading
+  * auto generated controls
+  * could have used dat.gui :)
+ * performance for smooth animation
+  * don't new
+  * don't function
+  * watch what you draw
+ * bundling as an exe
