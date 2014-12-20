@@ -124,6 +124,7 @@ var one_player_mode = false;
 if (window.location.host.match("joeba")) {
     flowerMode = false;
     one_player_mode = true;
+    loopdeloopon = true;
 }
 
 if (window.location.search.match(/one_player=yes/)) {
