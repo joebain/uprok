@@ -193,24 +193,20 @@ function getSoundFromArray(soundObj, success) {
 var soundObjs = [];
 function getSound(soundObj, success) {
 	if (soundObj.isLoaded) return;
-	if (soundObjs[soundObj.url]) {
-		var oldSoundObj = soundObjs[soundObj.url];
-		for (var s in oldSoundObj) {
-			soundObj[s] = oldSoundObj[s];
-		}
-		success();
-		return;
-	}
-	var request = new XMLHttpRequest();
-	request.open("GET", soundObj.url, true);
-	request.responseType = "arraybuffer";
-	request.onload = function() {
-		soundObj.buffer = audioContext.createBuffer(request.response, false);
-		soundObj.isLoaded = true;
-		soundObjs[soundObj.url] = soundObj;
-		success();
-	};
-	request.send();
+	setTimeout(function() {
+		var request = new XMLHttpRequest();
+		request.open("GET", soundObj.url, true);
+		request.responseType = "arraybuffer";
+		request.onload = function() {
+            audioContext.decodeAudioData(request.response, function(data) {
+                soundObj.buffer = data;
+                soundObj.isLoaded = true;
+                success();
+            });
+		};
+		request.send();
+	}, dlTimeout);
+	dlTimeout += 1000;
 }
 
 function createFilters(soundObj) {
@@ -459,6 +455,35 @@ function loopSounds() {
 	loopTimeout = setTimeout(loopSounds,(rocks[0].startSound.buffer.duration)*1000); 
 }
 
+
+if (window.location.protocol === "file:") {
+    var songs = [
+        "laurie_start",
+        "drums_start",
+        "adrums_start",
+        "plink_start",
+        "bass_start",
+        "laurie_mid",
+        "drums_mid",
+        "adrums_mid",
+        "plink_mid",
+        "bass_mid",
+        "laurie_end",
+        "drums_end",
+        "adrums_end",
+        "plink_end",
+        "bass_end"
+    ];
+
+    for (var s = 0 ; s < songs.length ; s++) {
+        var url = "sounds/js/" + songs[s] + ".js";
+        var script = document.createElement("script");
+        script.type = "application/x-javascript";
+        script.src = url;
+        document.head.appendChild(script);
+    }
+}
+
 function loadSounds() {
 	if (!audioContext) {
 		audioContext = new (window.AudioContext || window.webkitAudioContext);
@@ -469,53 +494,52 @@ function loadSounds() {
 
 	var gotten = 0;
 
-//    rocks[0].startSound = {url:"sounds/laurie_start.ogg"}
-//    getSoundAndSave(rocks[0].startSound, function(){gotten++; if (gotten == 15) startAllSounds();});
-//    rocks[1].startSound = {url:"sounds/drums_start.ogg"};
-//    rocks[2].startSound = {url:"sounds/adrums_start.ogg"};
-//    rocks[3].startSound = {url:"sounds/plink_start.ogg"};
-//    rocks[4].startSound = {url:"sounds/bass_start.ogg"};
-//    rocks[0].midSound = {url:"sounds/laurie_mid.ogg"}
-//    getSoundAndSave(rocks[0].midSound, function(){gotten++; if (gotten == 15) startAllSounds();});
-//    rocks[1].midSound = {url:"sounds/drums_mid.ogg"};
-//    rocks[2].midSound = {url:"sounds/adrums_mid.ogg"};
-//    rocks[3].midSound = {url:"sounds/plink_mid.ogg"};
-//    rocks[4].midSound = {url:"sounds/bass_mid.ogg"};
-//    rocks[0].endSound = {url:"sounds/laurie_end.ogg"}
-//    getSoundAndSave(rocks[0].endSound, function(){gotten++; if (gotten == 15) startAllSounds();});
-//    rocks[1].endSound = {url:"sounds/drums_end.ogg"};
-//    rocks[2].endSound = {url:"sounds/adrums_end.ogg"};
-//    rocks[3].endSound = {url:"sounds/plink_end.ogg"};
-//    rocks[4].endSound = {url:"sounds/bass_end.ogg"};
-//    getSoundAndSave(rocks[4].endSound, function(){gotten++; if (gotten == 15) startAllSounds();});
-//    for (var i in rocks) {
-//        var rock = rocks[i];
-//        rock.track = {};
-//        getSoundAndSave(rock.startSound, function(){gotten++; if (gotten == 15) startAllSounds();});
-//        getSoundAndSave(rock.midSound, function(){gotten++; if (gotten == 15) startAllSounds();});
-//        getSoundAndSave(rock.endSound, function(){gotten++; if (gotten == 15) startAllSounds();});
-//    }
+    if (window.location.protocol === "file:") {
+        rocks[0].startSound = {sourceArray:laurie_start, url:1}
+        rocks[1].startSound = {sourceArray:drums_start, url:2};
+        rocks[2].startSound = {sourceArray:adrums_start, url:3};
+        rocks[3].startSound = {sourceArray:plink_start, url:4};
+        rocks[4].startSound = {sourceArray:bass_start, url:5};
+        rocks[0].midSound = {sourceArray:laurie_mid, url:6}
+        rocks[1].midSound = {sourceArray:drums_mid, url:7};
+        rocks[2].midSound = {sourceArray:adrums_mid, url:8};
+        rocks[3].midSound = {sourceArray:plink_mid, url:9};
+        rocks[4].midSound = {sourceArray:bass_mid, url:10};
+        rocks[0].endSound = {sourceArray:laurie_end, url:11}
+        rocks[1].endSound = {sourceArray:drums_end, url:12};
+        rocks[2].endSound = {sourceArray:adrums_end, url:13};
+        rocks[3].endSound = {sourceArray:plink_end, url:14};
+        rocks[4].endSound = {sourceArray:bass_end, url:15};
+        for (var i in rocks) {
+            var rock = rocks[i];
+            rock.track = {};
+            getSoundFromArray(rock.startSound, function(){gotten++; if (gotten == 15) startAllSounds();});
+            getSoundFromArray(rock.midSound, function(){gotten++; if (gotten == 15) startAllSounds();});
+            getSoundFromArray(rock.endSound, function(){gotten++; if (gotten == 15) startAllSounds();});
+        }
+    } else {
+        rocks[0].startSound = {url:"sounds/laurie_start.ogg"}
+        rocks[1].startSound = {url:"sounds/drums_start.ogg"};
+        rocks[2].startSound = {url:"sounds/adrums_start.ogg"};
+        rocks[3].startSound = {url:"sounds/plink_start.ogg"};
+        rocks[4].startSound = {url:"sounds/bass_start.ogg"};
+        rocks[0].midSound = {url:"sounds/laurie_mid.ogg"}
+        rocks[1].midSound = {url:"sounds/drums_mid.ogg"};
+        rocks[2].midSound = {url:"sounds/adrums_mid.ogg"};
+        rocks[3].midSound = {url:"sounds/plink_mid.ogg"};
+        rocks[4].midSound = {url:"sounds/bass_mid.ogg"};
+        rocks[0].endSound = {url:"sounds/laurie_end.ogg"}
+        rocks[1].endSound = {url:"sounds/drums_end.ogg"};
+        rocks[2].endSound = {url:"sounds/adrums_end.ogg"};
+        rocks[3].endSound = {url:"sounds/plink_end.ogg"};
+        rocks[4].endSound = {url:"sounds/bass_end.ogg"};
+        for (var i in rocks) {
+            var rock = rocks[i];
+            rock.track = {};
+            getSound(rock.startSound, function(){gotten++; if (gotten == 15) startAllSounds();});
+            getSound(rock.midSound, function(){gotten++; if (gotten == 15) startAllSounds();});
+            getSound(rock.endSound, function(){gotten++; if (gotten == 15) startAllSounds();});
+        }
+    }
 
-	rocks[0].startSound = {sourceArray:laurie_start, url:1}
-	rocks[1].startSound = {sourceArray:drums_start, url:2};
-	rocks[2].startSound = {sourceArray:adrums_start, url:3};
-	rocks[3].startSound = {sourceArray:plink_start, url:4};
-	rocks[4].startSound = {sourceArray:bass_start, url:5};
-	rocks[0].midSound = {sourceArray:laurie_mid, url:6}
-	rocks[1].midSound = {sourceArray:drums_mid, url:7};
-	rocks[2].midSound = {sourceArray:adrums_mid, url:8};
-	rocks[3].midSound = {sourceArray:plink_mid, url:9};
-	rocks[4].midSound = {sourceArray:bass_mid, url:10};
-	rocks[0].endSound = {sourceArray:laurie_end, url:11}
-	rocks[1].endSound = {sourceArray:drums_end, url:12};
-	rocks[2].endSound = {sourceArray:adrums_end, url:13};
-	rocks[3].endSound = {sourceArray:plink_end, url:14};
-	rocks[4].endSound = {sourceArray:bass_end, url:15};
-	for (var i in rocks) {
-		var rock = rocks[i];
-		rock.track = {};
-		getSoundFromArray(rock.startSound, function(){gotten++; if (gotten == 15) startAllSounds();});
-		getSoundFromArray(rock.midSound, function(){gotten++; if (gotten == 15) startAllSounds();});
-		getSoundFromArray(rock.endSound, function(){gotten++; if (gotten == 15) startAllSounds();});
-	}
 }

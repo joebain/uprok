@@ -15,8 +15,6 @@ if (!window.navigator.userAgent.match(/chrom/i)) {
 //    });
 //}
 
-var one_player_mode = !!window.location.search.match(/one_player=yes/);
-
 var ground = [];
 
 var Vector2f = function(x, y) {
@@ -121,6 +119,20 @@ var previousSessionSettings;
 var loopdeloopon = false;
 var georgeMode = false;
 var flowerMode = true;
+var one_player_mode = false;
+
+if (window.location.host.match("joeba")) {
+    flowerMode = false;
+    one_player_mode = true;
+}
+
+if (window.location.search.match(/one_player=yes/)) {
+    one_player_mode = true;
+}
+else if (window.location.search.match(/one_player=no/)) {
+    one_player_mode = false;
+}
+
 
 function init() {
 	console.log("init!!!!");
