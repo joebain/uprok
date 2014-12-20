@@ -1,3 +1,12 @@
+var FREQUENCY_MAX_VALUE = 20000;
+var FREQUENCY_MIN_VALUE = 10;
+var Q_MAX_VALUE = 1000;
+var Q_MIN_VALUE = 0.0001;
+var GAIN_MIN_VALUE = -40;
+var GAIN_MAX_VALUE = 40;
+var DELAY_MIN_VALUE = 0;
+var DELAY_MAX_VALUE = 5;
+
 var modFuncs = {
 	filterFrequency: function(rock, param) {
 						 if (rock.track.filterNode.type === 0) { // low pass
@@ -10,13 +19,13 @@ var modFuncs = {
 							 }
 							 rock.track.filterNode.frequency.value = Math.pow(2, param*10);
 						 } else {
-							 rock.track.filterNode.frequency.value = param * (rock.track.filterNode.frequency.maxValue - rock.track.filterNode.frequency.minValue) + rock.track.filterNode.frequency.minValue;
+							 rock.track.filterNode.frequency.value = param * (FREQUENCY_MAX_VALUE - FREQUENCY_MIN_VALUE) + FREQUENCY_MIN_VALUE;
 						 }
 					 },
 
 	filterResonance: function(rock, param) {
-						 param *= (rock.track.filterNode.Q.maxValue-rock.track.filterNode.Q.minValue);
-						 param += rock.track.filterNode.Q.minValue;
+						 param *= (Q_MAX_VALUE-Q_MIN_VALUE);
+						 param += Q_MIN_VALUE;
 						 rock.track.filterNode.Q.value = param;
 					 },
 	filterOn: function(rock, param) {
@@ -26,13 +35,13 @@ var modFuncs = {
 	},
 	delayFeedback: function(rock, param) {
 					   param *= 0.7; // dont want too much
-					   param *= (rock.track.delayGainNode.gain.maxValue-rock.track.delayGainNode.gain.minValue);
-					   param += rock.track.delayGainNode.gain.minValue;
+					   param *= (GAIN_MAX_VALUE-GAIN_MIN_VALUE);
+					   param += GAIN_MIN_VALUE;
 					   rock.track.delayGainNode.gain.value = param;
 				   },
 	delayTime: function(rock, param) {
-				   param *= (rock.track.delayNode.delayTime.maxValue-rock.track.delayNode.delayTime.minValue);
-				   param += rock.track.delayNode.delayTime.minValue;
+				   param *= (DELAY_MAX_VALUE-DELAY_MIN_VALUE);
+				   param += DELAY_MIN_VALUE;
 				   rock.track.delayNode.delayTime.value = param;
 			   },
 	delayOn: function(rock, param) {
@@ -151,9 +160,11 @@ function getSoundAndSave(soundObj, success) {
 			var str = "var " + name + " = [" + Array.prototype.join.call(arr, ",") + "];";
 			var uriContent = "data:application/octet-stream," + encodeURIComponent(str);
 			var newWindow = window.open(uriContent, 'neuesDokument');
-			soundObj.buffer = audioContext.createBuffer(request.response, false);
-			soundObj.isLoaded = true;
-			success();
+            audioContext.decodeAudioData(request.response, function(data) {
+                soundObj.buffer = data;
+                soundObj.isLoaded = true;
+                success();
+            });
 		};
 		request.send();
 	}, dlTimeout);
@@ -170,10 +181,12 @@ function getSoundFromArray(soundObj, success) {
 		return;
 	}
 	var sourceBuffer = new Uint8Array(soundObj.sourceArray).buffer;
-	soundObj.buffer = audioContext.createBuffer(sourceBuffer, false);
-	soundObj.isLoaded = true;
+    audioContext.decodeAudioData(sourceBuffer, function(data) {
+        soundObj.buffer = data;
+        soundObj.isLoaded = true;
+        success();
+    });
 	soundObjs[soundObj.url] = soundObj;
-	success();
 }
 
 var soundObjs = [];
@@ -201,10 +214,10 @@ function getSound(soundObj, success) {
 
 function createFilters(soundObj) {
 
-	soundObj.dryGainNode = audioContext.createGainNode();
+	soundObj.dryGainNode = audioContext.createGain();
 	soundObj.dryGainNode.gain.value = 1.0;
 
-	soundObj.wetGainNode = audioContext.createGainNode();
+	soundObj.wetGainNode = audioContext.createGain();
 	soundObj.wetGainNode.gain.value = 0.0;
 
 	soundObj.filterNode = audioContext.createBiquadFilter();
@@ -212,36 +225,36 @@ function createFilters(soundObj) {
 	soundObj.filterNode.Q.value = 12;
 	soundObj.filterNode.frequency.value = 126;
 	soundObj.filterNode.mod = {value:0.2, minValue:0, maxValue:1, name:"mod"};
-	soundObj.filterGainNode = audioContext.createGainNode();
+	soundObj.filterGainNode = audioContext.createGain();
 	soundObj.filterGainNode.gain.value = 0.0;
-	soundObj.notFilterGainNode = audioContext.createGainNode();
+	soundObj.notFilterGainNode = audioContext.createGain();
 	soundObj.notFilterGainNode.gain.value = 1.0;
 
 	soundObj.reverbNode = audioContext.createConvolver();
 //    soundObj.reverbNode.buffer = ;
-	soundObj.reverbGainNode = audioContext.createGainNode();
+	soundObj.reverbGainNode = audioContext.createGain();
 	soundObj.reverbGainNode.gain.value = 0.0;
-	soundObj.notReverbGainNode = audioContext.createGainNode();
+	soundObj.notReverbGainNode = audioContext.createGain();
 	soundObj.notReverbGainNode.gain.value = 1.0;
 
-	soundObj.delayNode = audioContext.createDelayNode();
+	soundObj.delayNode = audioContext.createDelay(DELAY_MAX_VALUE);
 	soundObj.delayNode.delayTime.value = 0.0;
-	soundObj.delayGainNode = audioContext.createGainNode();
+	soundObj.delayGainNode = audioContext.createGain();
 	soundObj.delayGainNode.gain.value = 0.0;
-	soundObj.delayOutGainNode = audioContext.createGainNode();
+	soundObj.delayOutGainNode = audioContext.createGain();
 	soundObj.delayOutGainNode.gain.value = 0.0;
-	soundObj.notDelayGainNode = audioContext.createGainNode();
+	soundObj.notDelayGainNode = audioContext.createGain();
 	soundObj.notDelayGainNode.gain.value = 1.0;
 
-	soundObj.justDelayNode = audioContext.createDelayNode();
+	soundObj.justDelayNode = audioContext.createDelay(DELAY_MAX_VALUE);
 	soundObj.justDelayNode.delayTime = 0.5;
-	soundObj.justDelayInGainNode = audioContext.createGainNode();
+	soundObj.justDelayInGainNode = audioContext.createGain();
 	soundObj.justDelayInGainNode.gain.value = 1.0;
-	soundObj.justDelayFeedbackGainNode = audioContext.createGainNode();
+	soundObj.justDelayFeedbackGainNode = audioContext.createGain();
 	soundObj.justDelayFeedbackGainNode.gain.value = 0.0;
-	soundObj.justDelayOutGainNode = audioContext.createGainNode();
+	soundObj.justDelayOutGainNode = audioContext.createGain();
 	soundObj.justDelayOutGainNode.gain.value = 0.0;
-	soundObj.notJustDelayGainNode = audioContext.createGainNode();
+	soundObj.notJustDelayGainNode = audioContext.createGain();
 	soundObj.notJustDelayGainNode.gain.value = 1.0;
 
 
@@ -300,7 +313,7 @@ function createFilters(soundObj) {
 }
 
 function attachSound(soundObj, otherSoundObj) {
-	soundObj.dryGainNode = audioContext.createGainNode();
+	soundObj.dryGainNode = audioContext.createGain();
 	soundObj.dryGainNode.gain.value = 1.0;
 
 	soundObj.dryGainNode.connect(otherSoundObj.inputNode);
@@ -309,7 +322,7 @@ function attachSound(soundObj, otherSoundObj) {
 	soundObj.node.loop = true;
 	soundObj.node.buffer = soundObj.buffer;
 	soundObj.node.connect(soundObj.dryGainNode);
-	soundObj.node.noteOn(0);
+	soundObj.node.start(0);
 
 	soundObj.playing = true;
 }
@@ -318,7 +331,7 @@ function stopSound(soundObj) {
 	muteSound(soundObj, 0);
 	return;
 //    if (!soundObj.playing) return;
-	soundObj.node.noteOff(0);
+	soundObj.node.stop(0);
 	soundObj.playing = false;
 }
 
@@ -374,7 +387,8 @@ function startAllSounds() {
 		muteSound(rocks[i].track, 0);
 	}
 	loopSounds();
-	setupControls();
+    loadSettings(JSON.stringify(soundDefaults));
+//    setupControls();
 }
 function stopAllSounds(oldRocks) {
 	return;
@@ -444,7 +458,7 @@ function loopSounds() {
 
 function loadSounds() {
 	if (!audioContext) {
-		audioContext = new webkitAudioContext();
+		audioContext = new (window.AudioContext || window.webkitAudioContext);
 	} else {
 		return;
 	}

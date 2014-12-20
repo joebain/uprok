@@ -2,11 +2,18 @@ var context;
 var audioContext;
 
 if (!window.navigator.userAgent.match(/chrom/i)) {
-	$(function() {
-		$("body").html("<h1>UPROK</h1><h2>Chrome only right now, sorry!</h2><p><a href=http://google.com/chrome>Get Chrome here</a></p>");
-		throw "Error";
-	});
+    $(function() {
+        $("body").html("<h1>UPROK</h1><h2>Chrome only right now, sorry!</h2><p><a href=http://google.com/chrome>Get Chrome here</a></p>");
+        throw "Error";
+    });
 }
+//
+//if (!(window.AudioContext || window.webkitAudioContext)) {
+//    $(function() {
+//        $("body").html("<h1>UPROK</h1><h2>Chrome or Firefox only, sorry!</h2><p><a href=http://google.com/chrome>Get Chrome here</a><a href=http://firefox.com/download>Get Firefox here</a></p>");
+//        throw "Error";
+//    });
+//}
 
 var one_player_mode = !!window.location.search.match(/one_player=yes/);
 
@@ -278,7 +285,7 @@ function makeSlider(audioParams, name) {
 	gainBox.append(gainControl);
 	gainControl.PPSlider({width:300, name:name, hideTooltip:true, onChanged: function(e) {
 		if (audioParams.length) {
-			for (var i in audioParams) {
+			for (var i = 0 ; i < audioParams.length ; i++) {
 				var anAudioParam = audioParams[i];
 				if (typeof anAudioParam.value === "function") {
 					anAudioParam.value((parseInt(gainControl.val())/100)*(anAudioParam.maxValue-anAudioParam.minValue));
@@ -1071,7 +1078,7 @@ function update(delta)
 					rock.lastOff = gameTime;
 				}
 				rock.on = false;
-				console.log(rock.lastOn + ", " + (gameTime - rock.lastOn));
+//                console.log(rock.lastOn + ", " + (gameTime - rock.lastOn));
 				if (!rock.loopdeloop && gameTime - rock.lastOn < loopdeloopActionTime) {
 					rock.loopdeloop = true;
 					rock.loopdeloopStart = gameTime;
