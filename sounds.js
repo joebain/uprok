@@ -172,6 +172,7 @@ function getSoundAndSave(soundObj, success) {
 }
 
 function getSoundFromArray(soundObj, success) {
+	if (!soundObj) return;
 	if (soundObjs[soundObj.url]) {
 		var oldSoundObj = soundObjs[soundObj.url];
 		for (var s in oldSoundObj) {
@@ -380,6 +381,7 @@ function startAllSounds() {
 	}
 	startedSounds = true;
 	for (var i in rocks) {
+		if (rocks[i].originalNumber === 5) continue;
 		createFilters(rocks[i].track);
 		attachSound(rocks[i].startSound, rocks[i].track);
 		attachSound(rocks[i].midSound, rocks[i].track);
@@ -411,6 +413,7 @@ var loopTimeout;
 var fadeTime = 0.1;
 function loopSounds() {
 	for (var r = 0 ; r < rocks.length; r++) {
+		if (rocks[r].originalNumber === 5) continue;
 		if (rocks.length <= 2) {
 			if (rocks[r].startSound.dryGainNode.gain.value !== 0) {
 				rocks[r].startSound.dryGainNode.gain.linearRampToValueAtTime(rocks[r].startSound.dryGainNode.gain.value,audioContext.currentTime);
