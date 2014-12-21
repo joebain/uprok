@@ -1,12 +1,13 @@
 var context;
 var audioContext;
 
-if (!window.navigator.userAgent.match(/chrom/i)) {
-    $(function() {
-        $("body").html("<h1>UPROK</h1><h2>Chrome only right now, sorry!</h2><p><a href=http://google.com/chrome>Get Chrome here</a></p>");
-        throw "Error";
-    });
-}
+// allow eeryone to play, but only load sounds for the good browsers
+//if (false && !window.navigator.userAgent.match(/(?:chrom)|(?:safari)/i)) {
+//    $(function() {
+//        $("body").html("<h1>UPROK</h1><h2>Chrome only right now, sorry!</h2><p><a href=http://google.com/chrome>Get Chrome here</a></p>");
+//        throw "Error";
+//    });
+//}
 //
 //if (!(window.AudioContext || window.webkitAudioContext)) {
 //    $(function() {
@@ -14,6 +15,10 @@ if (!window.navigator.userAgent.match(/chrom/i)) {
 //        throw "Error";
 //    });
 //}
+
+var isIOs = window.navigator.userAgent.match(/(?:ipad)|(?:ipod)|(?:iphone)/i);
+var isSafari = window.navigator.userAgent.match(/(?:safari)/i);
+var isChrome = window.navigator.userAgent.match(/(?:chrom)/i);
 
 var ground = [];
 
@@ -119,7 +124,8 @@ var previousSessionSettings;
 var loopdeloopon = false;
 var georgeMode = false;
 var flowerMode = true;
-var one_player_mode = false;
+var one_player_mode = true;
+var one_player_player = 0;
 
 if (window.location.host.match("joeba")) {
     flowerMode = false;
@@ -137,17 +143,21 @@ else if (window.location.search.match(/one_player=no/)) {
 
 function init() {
 	console.log("init!!!!");
-	canvasSize.x = $(document).width();
-	canvasSize.y = $(document).height();
 	var canvas = document.getElementById("canvas");
-	    canvas.height = canvasSize.y;
-	    canvas.width = canvasSize.x;
 
 	context = canvas.getContext("2d");
+
+    resize();
 
 	window.onkeydown = keysdown;
 	window.onkeyup = keysup;
 	window.onmousemove = mousemove;
+	window.onmousedown = mousedown;
+    canvas.addEventListener("touchstart", touchstart);
+    canvas.addEventListener("touchend", touchend);
+    document.addEventListener("touchmove", touchmove);
+
+    window.onresize = resize;
 
 
 
@@ -193,6 +203,30 @@ function init() {
 	change_state(game_start);
 
 	loop();
+}
+
+function getCameraYForScreenSize() {
+    if (window.innerHeight < 400) {
+        return levelSize.y - (900 - (400 - window.innerHeight) * 0.3);
+    } else {
+        return levelSize.y - 900;
+    }
+}
+
+function resize() {
+    var ratio = 1;
+    if (window.devicePixelRatio) {
+        ratio = window.devicePixelRatio;
+    }
+    canvas.width = window.innerWidth*ratio;
+    canvas.height = window.innerHeight*ratio;
+    canvas.style.width = canvasSize.x = window.innerWidth;
+    canvas.style.height = canvasSize.y = window.innerHeight;
+    context.scale(ratio, ratio);
+
+    if (mode == game_start) {
+        camera.y = getCameraYForScreenSize();
+    }
 }
 
 function makeToggle(params, name) {
@@ -772,7 +806,10 @@ function startingGrid() {
 	}
 	rocksIn = 0;
 
-	loadSounds();
+    if ((isChrome || isSafari) && !isIOs) {
+        // only load sounds for these, ff is a bit shit still :(
+        loadSounds();
+    }
 	// make the level
 
 	var y = levelSize.y - 700;
@@ -805,8 +842,8 @@ function startingGrid() {
 	leftInGameTime = 0;
 
 
-	camera.y = levelSize.y - 900;
-	desiredCamera.y = levelSize.y - 900;
+    camera.y = getCameraYForScreenSize();
+	desiredCamera.y = levelSize.y - camera.y;
 	camera.x = 0;
 	desiredCamera.x = 0;
 	worldScale = 2;
@@ -820,13 +857,91 @@ function keysup(e) {
 	keys[e.keyCode] = false;
 }
 
+var one_player_player_chosen = false;
 function keysdown(e) {
+    if (!one_player_player_chosen && mode === game_start && e.keyCode >= 49 && e.keyCode <= 49+numberOfRocks) {
+        one_player_player = e.keyCode-49;
+        one_player_player_chosen = true;
+    }
 	keys[e.keyCode] = true;
+}
+
+var touch_key;// = 49; // key 1
+
+var safari_kicked = false;
+
+function touchstart(e) {
+    var x = e.touches[0].pageX;
+    var y = e.touches[0].pageY;
+
+    // kick ios safari into playing some noise
+//    if (!safari_kicked) {
+//        loadSounds();
+//    }
+
+    if (touch_key) {
+        keys[touch_key] = true;
+    } else {
+
+        if (mode === game_start && !touch_key) {
+            for (var r = 0 ; r < numberOfRocks ; r++) {
+                var rock = rocks[r];
+                if (!rock.joined) {
+                    var rockx = (rock.x - camera.x)*worldScale;
+                    var rocky = (rock.y - camera.y)*worldScale;
+                    if (x > rockx -50 && x < rockx+50 && y > rocky-50 && y < rocky + 50) {
+                        touch_key = 49+r;
+                        one_player_player = r;
+                        keys[touch_key] = true;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+function touchend(e) {
+    if (touch_key) {
+        keys[touch_key] = false;
+    }
+}
+
+function touchmove(e) {
+    e.preventDefault();
 }
 
 function mousemove(e) {
 	mousePos.x = e.pageX;
 	mousePos.y = e.pageY;
+}
+
+var isFullScreen = false;
+function mousedown(e) {
+    var x = e.pageX;
+    var y = e.pageY;
+    // go fullscreen
+    if (mode === game_start && !isIOs) {
+        if (x > window.innerWidth - 100 && y > window.innerHeight - 100) {
+            if (!isFullScreen) {
+                var rfs =
+                       canvas.requestFullScreen
+                    || canvas.webkitRequestFullScreen
+                    || canvas.mozRequestFullScreen
+                ;
+                rfs.call(canvas);
+                isFullScreen = true;
+            } else {
+                var efs =
+                       document.exitFullscreen
+                    || document.mozCancelFullScreen
+                    || document.webkitExitFullscreen
+                ;
+                efs.call(document);
+                isFullScreen = false;
+            }
+        }
+    }
 }
 
 function joinRock(i, local) {
@@ -874,14 +989,16 @@ function run_start(delta) {
 
 	controlSound();
 
-	for (var i in rocks) {
+	for (var i = 0 ; i < rocks.length ; i++) {
 		var rock = rocks[i];
-		if ((keys[rock.onKey] && rock.local) || (one_player_mode && rocks[0].in && i > 0 && timeInStart-rocks[0].joinTime > i*1000)) {
+		if ((keys[rock.onKey] && rock.local) || (one_player_mode && rocks[one_player_player].in && i !== one_player_player && timeInStart-rocks[one_player_player].joinTime > (i<one_player_player?(i+1):i)*1000)) {
 			joinRock(i, true);
 		}
+        rock.x = ((Number(i)+1)*(canvasSize.x/((numberOfRocks+1)*2)));
+        rock.x = ((Number(i)+1)*(canvasSize.x/((numberOfRocks+1)*2)));
 	}
 
-	if (rocksIn >= 2 && (!one_player_mode || rocks[0].in)) {
+	if (rocksIn >= 2 && (!one_player_mode || rocks[one_player_player].in)) {
 		timeLeftInStart -=delta;
 	} else {
 		timeLeftInStart = playerCountDown;
@@ -906,7 +1023,6 @@ function run_start(delta) {
 	}
 	else if (timeLeftInStart <= 0 || rocksIn == numberOfRocks) {
 		console.log("starting game");
-		camera.y = levelSize.y - 900;
 		desiredCamera.y = levelSize.y - 900;
 		worldScale = 2;
 		raceCountDown = 3000;
@@ -940,11 +1056,12 @@ var timeInEnd = 0;
 function run_end(delta) {
 
 	muteAllSounds(rocks, 1);
-	setTimeout(function(){
-		location.reload(true);
-	}, 1000);
+//    setTimeout(function(){
+//        location.reload(true);
+//    }, 1000);
 //    stopAllSounds();
-//    change_state(game_start);
+    change_state(game_start);
+//    loadSounds();
 
 }
 
@@ -1099,7 +1216,7 @@ function update(delta)
 	for (i in rocks) {
 		rock = rocks[i];
 		if (one_player_mode) {
-			if (rock.originalNumber === 0) {
+			if (rock.originalNumber === one_player_player) {
 				rock.autopilot = false;
 			} else {
 				rock.autopilot = true;
@@ -1381,6 +1498,10 @@ function draw() {
 	context.closePath();
 	context.fill();
 
+    var baseFontSize = 100;
+    if (window.innerWidth < 800 || window.innerHeight < 400) {
+        baseFontSize = 50;
+    }
 	for (var i in rocks) {
 		var rock = rocks[i];
 		if (!rock.in) {
@@ -1392,11 +1513,11 @@ function draw() {
 					textToDisplay = rock.letter;
 				}
 				var textMeasurements = context.measureText(textToDisplay);
-				context.font = "100px ostrich-black";
+				context.font = baseFontSize + "px ostrich-black";
 				context.fillStyle = rock.colour;
 				context.fillText(textToDisplay, (rock.x - camera.x)*worldScale - textMeasurements.width*0.5, (rock.y+20 - camera.y)*worldScale);
 
-				context.font = "100px ostrich-bold";
+				context.font = baseFontSize + "px ostrich-bold";
 				context.fillStyle = "#000000";
 				context.fillText(textToDisplay, (rock.x - camera.x)*worldScale - textMeasurements.width*0.5, (rock.y+20 - camera.y)*worldScale);
 			}
@@ -1471,11 +1592,11 @@ function draw() {
 		var textToDisplay = (leftInGameTime/1000).toFixed(0);
 		var textMeasurements = context.measureText(textToDisplay);
 
-		context.font = "100px ostrich-black";
+		context.font = baseFontSize + "px ostrich-black";
 		context.fillStyle = rocks[0].colour;
 		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
 
-		context.font = "100px ostrich-bold";
+		context.font = baseFontSize + "px ostrich-bold";
 		context.fillStyle = "#000000";
 		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
 
@@ -1484,11 +1605,11 @@ function draw() {
 
 			textMeasurements = context.measureText(textToDisplay);
 
-			context.font = "100px ostrich-black";
+			context.font = baseFontSize + "px ostrich-black";
 			context.fillStyle = rocks[0].colour;
 			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 210);
 
-			context.font = "100px ostrich-bold";
+			context.font = baseFontSize + "px ostrich-bold";
 			context.fillStyle = "#000000";
 			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 210);
 
@@ -1496,22 +1617,22 @@ function draw() {
 			textToDisplay = "George!";
 			textMeasurements = context.measureText(textToDisplay);
 
-			context.font = "100px ostrich-black";
+			context.font = baseFontSize + "px ostrich-black";
 			context.fillStyle = rocks[0].colour;
 			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 120);
 
-			context.font = "100px ostrich-bold";
+			context.font = baseFontSize + "px ostrich-bold";
 			context.fillStyle = "#000000";
 			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 120);
 		} else {
 			textToDisplay = winnerText + " wins!";
 			textMeasurements = context.measureText(textToDisplay);
 
-			context.font = "100px ostrich-black";
+			context.font = baseFontSize + "px ostrich-black";
 			context.fillStyle = rocks[0].colour;
 			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 150);
 
-			context.font = "100px ostrich-bold";
+			context.font = baseFontSize + "px ostrich-bold";
 			context.fillStyle = "#000000";
 			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5 - 150);
 		}
@@ -1520,47 +1641,47 @@ function draw() {
 		var textToDisplay = (timeLeftInStart/1000).toFixed(0);
 		var textMeasurements = context.measureText(textToDisplay);
 
-		context.font = "100px ostrich-black";
+		context.font = baseFontSize + "px ostrich-black";
 		context.fillStyle = "#ffffff";
 		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
 
-		context.font = "100px ostrich-bold";
+		context.font = baseFontSize + "px ostrich-bold";
 		context.fillStyle = "#000000";
 		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
 	}
 	if (mode === game_start && doingRaceCountDown) {
 		var alpha = raceCountDown/500;
 		var textToDisplay = "R A C E !";
-		context.font = "102px ostrich-black";
+		context.font = (baseFontSize+2) + "px ostrich-black";
 		var textMeasurements = context.measureText(textToDisplay);
 
 //        context.fillStyle = "#ffffff";
 		context.fillStyle ="rgba(255,255,255," + alpha + ")";// "#000000";
 		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
 
-		context.font = "100px ostrich-bold";
+		context.font = baseFontSize + "px ostrich-bold";
 //        context.fillStyle = "#000000";
 		context.fillStyle ="rgba(0,0,0," + alpha + ")";// "#000000";
 		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5);
 	}
 	if (mode === game_start) {
 		if (one_player_mode) {
-			var textToDisplay = "Single player mode: Press '1' key";
+			var textToDisplay = "Keys 1 - 5, or touch, to start";
 
-			context.font = "40px ostrich-black";
+			context.font = (baseFontSize*0.4) + "px ostrich-black";
 			var textMeasurements = context.measureText(textToDisplay);
 
 			var alpha = doingRaceCountDown ? raceCountDown/500 : 1;
 			context.fillStyle ="rgba(0,0,0," + alpha + ")";
-			context.fillRect(canvasSize.x*0.5 - textMeasurements.width*0.5, 10, textMeasurements.width, 45);
+			context.fillRect(canvasSize.x*0.5 - textMeasurements.width*0.5, 50-baseFontSize*0.4, textMeasurements.width, baseFontSize*0.4+5);
 
-			context.font = "40px ostrich-bold";
+			context.font = (baseFontSize*0.4) + "px ostrich-bold";
 			context.fillStyle ="rgba(255,255,255," + alpha + ")";
 			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, 50);
 
 		}
 
-		context.font = "60px ostrich-black";
+		context.font = (baseFontSize*0.6) + "px ostrich-black";
         if (flowerMode) {
             var textToDisplay = "Touch flower when under ground";
         } else {
@@ -1572,30 +1693,60 @@ function draw() {
 		context.fillStyle ="rgba(255,255,255," + alpha + ")";// "#000000";
 		context.fillRect(canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+65, textMeasurements.width, 65);
 
-		context.font = "60px ostrich-bold";
+		context.font = (baseFontSize*0.6) + "px ostrich-bold";
 		context.fillStyle ="rgba(0,0,0," + alpha + ")";// "#000000";
 		context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+120);
 
-	if (loopdeloopon) {
-			textToDisplay = "Tap to loop de loop";
-			textMeasurements = context.measureText(textToDisplay);
+        if (loopdeloopon) {
+                textToDisplay = "Tap to loop de loop";
+                textMeasurements = context.measureText(textToDisplay);
 
-	//        context.fillStyle = "#ffffff";
-			context.fillStyle ="rgba(255,255,255," + alpha + ")";// "#000000";
-			context.fillRect(canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+135, textMeasurements.width, 65);
+        //        context.fillStyle = "#ffffff";
+                context.fillStyle ="rgba(255,255,255," + alpha + ")";// "#000000";
+                context.fillRect(canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+135, textMeasurements.width, 65);
 
-	//        context.font = "60px ostrich-black";
-	//        context.fillStyle = "#ffffff";
-	//        context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+190);
+        //        context.font = "60px ostrich-black";
+        //        context.fillStyle = "#ffffff";
+        //        context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+190);
 
-			context.font = "60px ostrich-bold";
-	//        context.fillStyle = "#000000";
-			context.fillStyle ="rgba(0,0,0," + alpha + ")";// "#000000";
-			context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+190);
+                context.font = (baseFontSize*0.6) + "px ostrich-bold";
+        //        context.fillStyle = "#000000";
+                context.fillStyle ="rgba(0,0,0," + alpha + ")";// "#000000";
+                context.fillText(textToDisplay, canvasSize.x*0.5 - textMeasurements.width*0.5, canvasSize.y*0.5+190);
+        }
+
+        // fullscreen button
+        if (!isIOs) { // full screen don't work on ios
+            context.lineWidth = 5;
+            context.fillStyle ="rgba(0,0,0," + alpha + ")";;
+            context.fillRect(window.innerWidth - 80, window.innerHeight - 80, 80, 80);
+            context.strokeStyle ="rgba(255,255,255," + alpha + ")";
+            context.beginPath();
+            context.moveTo(window.innerWidth - 70, window.innerHeight - 30);
+            context.lineTo(window.innerWidth - 70, window.innerHeight - 70);
+            context.lineTo(window.innerWidth - 30, window.innerHeight - 70);
+
+            context.moveTo(window.innerWidth - 10, window.innerHeight - 50);
+            context.lineTo(window.innerWidth - 10, window.innerHeight - 10);
+            context.lineTo(window.innerWidth - 50, window.innerHeight - 10);
+            context.stroke();
+        }
 	}
-	}
+
+    // sounds loading bar
+    if (soundLoadProgress > 0 && soundLoadProgress < 1) {
+        soundLoadBarWidth += (soundLoadProgress-soundLoadBarWidth)*0.01;
+        context.strokeStyle ="rgba(255,255,255," + alpha + ")";
+        context.fillStyle = "rgba(255,255,255,"+alpha+")";
+        context.fillRect(0, canvasSize.y-10, canvasSize.x*soundLoadBarWidth, 10);
+
+        context.font = "12px ostrich-bold";
+        context.fillStyle = "rgba(0,0,0,"+alpha+")";
+        context.fillText("Loading music...", 0, canvasSize.y);
+    }
 
 }
+var soundLoadBarWidth = 0.0;
 
 function toScreenSpace(point) {
 	return {x:(point.x-camera.x)*worldScale, y:(point.y - camera.y)*worldScale};

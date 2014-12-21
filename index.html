@@ -1,5 +1,7 @@
 <head>
 	<title>UPROK</title>
+    <meta content='width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, minimal-ui' name='viewport' />
+    <meta name="apple-mobile-web-app-capable" content="yes">
 	<script type="application/x-javascript" src="scripts/jquery-1.7.min.js"></script>
 <!--    <script type="application/x-javascript" src="socket.io/socket.io.js"></script>-->
 	<script type="application/x-javascript" src="scripts/underscore.js"></script>
@@ -26,10 +28,16 @@
       font-family: "ostrich-regular";
       src: url("fonts/ostrich-regular.ttf");
     }
+    html {
+        height: 100%;
+        width: 100%;
+    }
 	body {
 		padding:0px;
 		margin:0px;
 		background-color: white;
+        height: 100%;
+        width: 100%;
 	}
 	.speedDiv {
 		width:125px;
@@ -179,7 +187,7 @@
 		text-align:center;
 	}
 	#container {
-		width:800;
+		/*width:800;*/
 	/*	height:900;*/
 		position:relative;
 	/*	margin:auto;*/
