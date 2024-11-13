@@ -1,4 +1,4 @@
-var context;
+//var context;
 var audioContext;
 
 // allow eeryone to play, but only load sounds for the good browsers
@@ -121,10 +121,10 @@ var sliders = [];
 var updateSlidersParam = {value:false, name:"update sliders"};
 var previousSessionSettings;
 
-var loopdeloopon = false;
+var loopdeloopon = true;
 var georgeMode = false;
-var flowerMode = true;
-var one_player_mode = true;
+var flowerMode = false;
+var one_player_mode = false;
 var one_player_player = 0;
 
 if (window.location.host.match("joeba")) {
@@ -806,10 +806,10 @@ function startingGrid() {
 	}
 	rocksIn = 0;
 
-    if ((isChrome || isSafari) && !isIOs) {
+    //if ((isChrome || isSafari) && !isIOs) {
         // only load sounds for these, ff is a bit shit still :(
-        loadSounds();
-    }
+        //loadSounds();
+    //}
 	// make the level
 
 	var y = levelSize.y - 700;
@@ -917,6 +917,7 @@ function mousemove(e) {
 }
 
 var isFullScreen = false;
+var calledLoadSounds = false;
 function mousedown(e) {
     var x = e.pageX;
     var y = e.pageY;
@@ -942,6 +943,10 @@ function mousedown(e) {
             }
         }
     }
+  if (!calledLoadSounds) {
+      loadSounds();
+    calledLoadSounds = true;
+  }
 }
 
 function joinRock(i, local) {
